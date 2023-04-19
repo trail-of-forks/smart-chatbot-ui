@@ -26,7 +26,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       action: toolAction,
       key,
     } = (await req.body) as RunPluginRequest;
-    const context = createContext(taskId, req, model, key);
+    const verbose = process.env.DEBUG_AGENT_LLM_LOGGING === 'true';
+    const context = createContext(taskId, req, model, verbose, key);
     const toolResult = await executeTool(context, toolAction);
     const result: PluginResult = {
       action: toolAction,

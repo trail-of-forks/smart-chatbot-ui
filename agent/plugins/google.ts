@@ -1,5 +1,10 @@
 import { OPENAI_API_HOST } from '@/utils/app/const';
-import { extractTextFromHtml, sliceByTokenSize } from '@/utils/server/webpage';
+import {
+  chunkTextByTokenSize,
+  extractTextFromHtml,
+  getSimilarChunks as getChunksSortedBySimilarity,
+  sliceByTokenSize,
+} from '@/utils/server/webpage';
 
 import { Action, Plugin } from '@/types/agent';
 import { Message } from '@/types/chat';
@@ -7,13 +12,15 @@ import { GoogleSource } from '@/types/google';
 
 import { TaskExecutionContext } from './executor';
 
+import chalk from 'chalk';
 import endent from 'endent';
 
 export default {
   nameForModel: 'google_search',
   nameForHuman: 'GoogleSearch',
   descriptionForHuman: 'useful for when you need to ask with google search.',
-  descriptionForModel: 'useful for when you need to ask with google search.',
+  descriptionForModel:
+    "useful for when you need to ask with google search. If the question is something you don't know, search for it first with this tool.",
   displayForUser: true,
   execute: async (
     context: TaskExecutionContext,
@@ -24,9 +31,9 @@ export default {
     const encodedQuery = encodeURIComponent(query.trim());
     const apiKey = process.env.GOOGLE_API_KEY;
     const cseId = process.env.GOOGLE_CSE_ID;
-    const googleRes = await fetch(
-      `https://customsearch.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodedQuery}&num=5`,
-    );
+    const url = `https://customsearch.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodedQuery}&num=3`;
+    console.log('fetch:' + url);
+    const googleRes = await fetch(url);
 
     const googleData = await googleRes.json();
     const sources: GoogleSource[] = googleData.items.map((item: any) => ({
@@ -51,15 +58,22 @@ export default {
           ])) as any;
 
           const html = await res.text();
-          const textWhole = extractTextFromHtml(html);
-          const text = sliceByTokenSize(encoding!, textWhole, 0, 400);
-          if (!text) {
-            return {
-              ...source,
-              text,
-            } as GoogleSource;
+          const wholeText = extractTextFromHtml(html);
+          const text = sliceByTokenSize(encoding, wholeText, 0, 2000);
+          const sortedChunks = await getChunksSortedBySimilarity(
+            encoding,
+            query,
+            text,
+            500,
+            context.apiKey,
+          );
+          if (sortedChunks.length === 0) {
+            return null;
           }
-          return null;
+          return {
+            ...source,
+            text: sortedChunks[0],
+          } as GoogleSource;
         } catch (error) {
           console.error(error);
           return null;
@@ -84,7 +98,7 @@ export default {
     }
 
     const answerPrompt = endent`
-    Provide me with the information I requested. Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as a markdown link as you use them at the end of each sentence by number of the source (ex: [[1]](link.com)). Provide an accurate response and then stop. Today's date is ${new Date().toLocaleDateString()}.
+    Answer the following questions as best you can. Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as a markdown link as you use them at the end of each sentence by number of the source (ex: [[1]](link.com)). Provide an accurate response and then stop. Today's date is ${new Date().toLocaleDateString()}.
 
     Example Input:
     What's the weather in San Francisco today?
@@ -103,6 +117,12 @@ export default {
 
     Response:
     `;
+
+    if (context.verbose) {
+      console.log(chalk.greenBright('LLM Start(google plugin)'));
+      console.log(answerPrompt);
+      console.log('');
+    }
 
     const answerMessage: Message = { role: 'user', content: answerPrompt };
     const modelId = context.model?.id ?? 'gpt-3.5-turbo';
@@ -125,7 +145,7 @@ export default {
           answerMessage,
         ],
         max_tokens: 1000,
-        temperature: 1,
+        temperature: 0,
         stream: false,
       }),
     });
@@ -136,6 +156,13 @@ export default {
     }
     const answer = json.choices[0].message.content;
     encoding.free();
+
+    if (context.verbose) {
+      console.log(chalk.greenBright('LLM END(google plugin)'));
+      console.log(answer);
+      console.log('');
+    }
+
     return answer;
   },
 } as Plugin;

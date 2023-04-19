@@ -9,15 +9,9 @@ import {
 } from './requests';
 
 export const createApiTools = (context: TaskExecutionContext): Plugin[] => {
-  return [
-    new RequestsGetTool(context.headers),
-    new RequestsPostTool(context.headers),
-  ];
+  return [new RequestsGetTool(), new RequestsPostTool()];
 };
 
 export const createWebpageTools = (context: TaskExecutionContext): Plugin[] => {
-  return [
-    new RequestsGetWebpageTool(context.headers),
-    new RequestsPostWebpageTool(context.headers),
-  ];
+  return [new RequestsGetWebpageTool(), new RequestsPostWebpageTool()];
 };

@@ -74,8 +74,8 @@ export class RequestsPostTool implements Plugin, RequestTool {
 }
 
 export class RequestsGetWebpageTool implements Plugin, RequestTool {
-  nameForHuman = 'requests_get_webpage_content';
-  nameForModel = 'Request Webpage Content';
+  nameForHuman = 'Get Webpage';
+  nameForModel = 'requests_get_webpage_content';
   displayForUser = true;
 
   constructor(public headers: Headers = {}) {}
@@ -86,6 +86,7 @@ export class RequestsGetWebpageTool implements Plugin, RequestTool {
     if (!url) {
       throw new Error('invalid input.');
     }
+    console.log(`fetch(${this.nameForModel}):` + url);
     const res = await fetch(url, {
       headers: this.headers,
     });
@@ -121,7 +122,7 @@ export class RequestsGetWebpageTool implements Plugin, RequestTool {
   }
 
   descriptionForHuman =
-    'Use this when you want to GET to a text content of the webpage.';
+    'Use this when you want to GET a text content of the webpage.';
   descriptionForModel = `A portal to the internet. Use this when you need to get specific content from a website. 
   Input should be a  url (i.e. https://www.google.com). The output will be the text response of the GET request.`;
 }

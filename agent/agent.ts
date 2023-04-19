@@ -11,6 +11,7 @@ import { LLMChain } from 'langchain/chains';
 import { LLMResult } from 'langchain/dist/schema';
 import { OpenAI, OpenAIChat } from 'langchain/llms/openai';
 import { PromptTemplate } from 'langchain/prompts';
+import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 
 const strip = (str: string, c: string) => {
   const m = str.match(new RegExp(`${c}(.*)${c}`));
@@ -156,12 +157,6 @@ export const executeNotConversationalReactAgent = async (
     callbackManager.addHandler(handler);
   }
 
-  const model: OpenAIChat = new OpenAIChat({
-    temperature: 0,
-    callbackManager,
-    verbose,
-    openAIApiKey: context.apiKey,
-  });
   const prompt: PromptTemplate = PromptTemplate.fromTemplate(
     notConversational.prefix +
       '\n\n' +
@@ -169,12 +164,6 @@ export const executeNotConversationalReactAgent = async (
       '\n\n' +
       notConversational.suffix,
   );
-  const chainA: LLMChain = new LLMChain({
-    llm: model,
-    prompt,
-    callbackManager,
-    verbose,
-  });
 
   let agentScratchpad = '';
   if (toolActionResults.length > 0) {
@@ -196,13 +185,49 @@ Observation: ${observation}\n`;
     .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
     .join('\n');
   const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
-  const result = await chainA.call({
+
+  const userContent = await prompt.format({
+    locale: context.locale,
     tool_descriptions: toolDescriptions,
     tool_names: toolNames,
     input,
     agent_scratchpad: agentScratchpad,
   });
-  const output = parseResultForNotConversational(tools, result.text);
+  const openai = new OpenAIApi(new Configuration({ apiKey: context.apiKey }));
+  const messages: ChatCompletionRequestMessage[] = [
+    {
+      role: 'system',
+      content: `Use the language ${context.locale} for your answer.`,
+    },
+    {
+      role: 'user',
+      content: userContent,
+    },
+  ];
+
+  const start = Date.now();
+  if (verbose) {
+    console.log(chalk.greenBright('LLM Request:'));
+    console.log(messages[0].content);
+    console.log(messages[1].content);
+    console.log('');
+  }
+
+  const result = await openai.createChatCompletion({
+    model: context.model?.id || 'gpt-3.5-turbo',
+    messages,
+    temperature: 0,
+  });
+
+  const responseText = result.data.choices[0].message?.content;
+  const ellapsed = Date.now() - start;
+  if (verbose) {
+    console.log(chalk.greenBright('LLM Response:'));
+    console.log(`ellapsed: ${ellapsed / 1000} sec.`);
+    console.log(responseText);
+    console.log('');
+  }
+  const output = parseResultForNotConversational(tools, responseText!);
   return output;
 };
 

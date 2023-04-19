@@ -1,3 +1,5 @@
+import { calcCosineSimilarity, createEmbedding } from './similarity';
+
 import { Tiktoken } from '@dqbd/tiktoken';
 import { Readability } from '@mozilla/readability';
 import jsdom, { JSDOM } from 'jsdom';
@@ -17,6 +19,10 @@ export const extractTextFromHtml = (html: string): string => {
     return '';
   }
   return cleanSourceText(parsed.textContent);
+};
+
+export const getTokenSize = (text: string, encoding: Tiktoken): number => {
+  return encoding.encode(text).length;
 };
 
 export const sliceByTokenSize = (
@@ -45,6 +51,42 @@ export const chunkTextByTokenSize = (
   return chunks.map((chunk) => {
     return decoder.decode(encoding.decode(chunk));
   });
+};
+
+export const getSimilarChunks = async (
+  encoding: Tiktoken,
+  input: string,
+  text: string,
+  chunkSize: number,
+  apiKey?: string,
+): Promise<string[]> => {
+  const inputEmbedding = await createEmbedding(input, apiKey);
+  const chunks = chunkTextByTokenSize(encoding, text, chunkSize);
+  // get embedding for each chunk
+  const chunkEmbeddings = await Promise.all(
+    chunks.map((chunk) => {
+      return createEmbedding(chunk, apiKey).then((embedding) => {
+        return {
+          embedding,
+          chunk,
+        };
+      });
+    }),
+  );
+  // get similarity score for each chunk
+  const chunkSimilarities = chunkEmbeddings.map((chunkEmbedding) => {
+    const similarity = calcCosineSimilarity(
+      inputEmbedding,
+      chunkEmbedding.embedding,
+    );
+    return {
+      similarity,
+      ...chunkEmbedding,
+    };
+  });
+  return chunkSimilarities
+    .sort((a, b) => b.similarity - a.similarity)
+    .map((c) => c.chunk);
 };
 
 export const cleanSourceText = (text: string) => {

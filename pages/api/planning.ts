@@ -36,8 +36,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const lastMessage = messages[messages.length - 1];
-    const context = createContext(taskId, req, model, key);
     const verbose = process.env.DEBUG_AGENT_LLM_LOGGING === 'true';
+    const context = createContext(taskId, req, model, verbose, key);
     const result = await executeNotConversationalReactAgent(
       context,
       enabledToolNames,
