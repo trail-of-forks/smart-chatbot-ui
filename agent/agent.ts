@@ -239,9 +239,13 @@ export const parseResultForNotConversational = (
   if (thought && action && action.indexOf('None') === -1) {
     const tool = tools.find((t) => t.nameForModel === action);
     if (!tool) {
-      // return the answer if already has for better experience.
-      console.warn(new Error(`Tool ${action} not found`));
-      return answerResult;
+      const error = new Error(`Tool ${action} not found`);
+      if (answer) {
+        // return the answer if already has for better experience.
+        return answerResult;
+      } else {
+        throw error;
+      }
     }
     const matchActionInput = result.match(/Action Input: (.*)(\n|$)/);
     const toolInputStr = matchActionInput

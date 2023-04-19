@@ -55,4 +55,14 @@ Action: nonExistingTool
 Action Input: 'input'`;
     expect(() => parseResultForNotConversational(tools, result)).toThrow();
   });
+  it('should return an answer even if tool is not found', () => {
+    const result = `Some thought
+Action: nonExistingTool
+Action Input: 'input'
+Final Answer: some answer`;
+    expect(parseResultForNotConversational(tools, result)).toEqual({
+      type: 'answer',
+      answer: 'some answer',
+    });
+  });
 });
