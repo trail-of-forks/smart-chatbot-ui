@@ -1,6 +1,6 @@
 import { Plugin } from '@/types/agent';
 
-import { ToolExecutionContext } from './executor';
+import { TaskExecutionContext } from './executor';
 import {
   RequestsGetTool,
   RequestsGetWebpageTool,
@@ -8,14 +8,14 @@ import {
   RequestsPostWebpageTool,
 } from './requests';
 
-export const createApiTools = (context: ToolExecutionContext): Plugin[] => {
+export const createApiTools = (context: TaskExecutionContext): Plugin[] => {
   return [
     new RequestsGetTool(context.headers),
     new RequestsPostTool(context.headers),
   ];
 };
 
-export const createWebpageTools = (context: ToolExecutionContext): Plugin[] => {
+export const createWebpageTools = (context: TaskExecutionContext): Plugin[] => {
   return [
     new RequestsGetWebpageTool(context.headers),
     new RequestsPostWebpageTool(context.headers),

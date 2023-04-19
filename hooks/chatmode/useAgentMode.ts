@@ -64,14 +64,14 @@ export function useAgentMode(
           planningCount++;
           const tool = result.plugin;
           if (tool.displayForUser) {
-            const isSearch =
-              tool.descriptionForHuman.toLowerCase().indexOf('search') !== -1;
-            const simpleQuery = result.pluginInput.length < 100;
+            const simpleQuery =
+              result.pluginInput.length < 100 &&
+              result.pluginInput.match(/^[\[\{}]]/) === null;
             let content = `${tool.nameForHuman} ${t('executing...')}`;
-            if (isSearch && simpleQuery) {
-              content = `${tool.nameForHuman} ${t('executing...')} - ${t(
-                'Query',
-              )}: ${result.pluginInput}`;
+            if (simpleQuery) {
+              content = `${tool.nameForHuman} ${t('executing...')} - ${
+                result.pluginInput
+              }`;
             }
             params.conversation = updater.addMessage(params.conversation, {
               role: 'assistant',

@@ -1,7 +1,7 @@
 import { Message } from './chat';
 import { OpenAIModel } from './openai';
 
-import { ToolExecutionContext } from '@/agent/plugins/executor';
+import { TaskExecutionContext } from '@/agent/plugins/executor';
 
 export type Action = {
   type: 'action';
@@ -39,6 +39,7 @@ export interface RunPluginRequest {
   model: OpenAIModel;
   input: string;
   action: Action;
+  key?: string;
 }
 
 export interface ToolDefinitionApi {
@@ -55,7 +56,7 @@ export interface Plugin {
   nameForModel: string;
   descriptionForModel: string;
   descriptionForHuman: string;
-  execute?: (context: ToolExecutionContext, input: string) => Promise<string>;
+  execute?: (context: TaskExecutionContext, action: Action) => Promise<string>;
   api?: ToolDefinitionApi;
   apiSpec?: string;
   auth?: ToolAuth;

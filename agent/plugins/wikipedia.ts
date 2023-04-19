@@ -1,7 +1,7 @@
-import { Plugin } from '@/types/agent';
+import { Action, Plugin } from '@/types/agent';
 import { GoogleSource } from '@/types/google';
 
-import { ToolExecutionContext } from './executor';
+import { TaskExecutionContext } from './executor';
 
 const ALLOWED_LOCALES = [
   'en',
@@ -25,9 +25,10 @@ export default {
   descriptionForModel: 'useful for when you need to ask wikipedia.',
   displayForUser: true,
   execute: async (
-    context: ToolExecutionContext,
-    query: string,
+    context: TaskExecutionContext,
+    action: Action,
   ): Promise<string> => {
+    const query = action.pluginInput;
     const locale = context.locale;
     if (ALLOWED_LOCALES.indexOf(locale) === -1) {
       throw new Error('Unsupported locale: ' + locale);

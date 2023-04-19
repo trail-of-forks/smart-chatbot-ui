@@ -1,6 +1,6 @@
 import { Plugin, PluginResult, ReactAgentResult } from '@/types/agent';
 
-import { ToolExecutionContext } from './plugins/executor';
+import { TaskExecutionContext } from './plugins/executor';
 import { listToolsBySpecifiedPlugins } from './plugins/list';
 import conversational from './prompts/conversational';
 import notConversational from './prompts/notConversational';
@@ -25,6 +25,7 @@ const stripQuotes = (str: string) => {
 };
 class _DebugCallbackHandler extends ConsoleCallbackHandler {
   alwaysVerbose: boolean = true;
+  llmStartTime: number = 0;
   async handleLLMStart(
     llm: {
       name: string;
@@ -32,12 +33,15 @@ class _DebugCallbackHandler extends ConsoleCallbackHandler {
     prompts: string[],
     verbose?: boolean,
   ): Promise<void> {
+    this.llmStartTime = Date.now();
     console.log(chalk.greenBright('handleLLMStart ============'));
     console.log(prompts[0]);
     console.log('');
   }
   async handleLLMEnd(output: LLMResult, verbose?: boolean): Promise<void> {
+    const duration = Date.now() - this.llmStartTime;
     console.log(chalk.greenBright('handleLLMEnd =============='));
+    console.log(`ellapsed: ${duration / 1000} sec.`);
     console.log(output.generations[0][0].text);
     console.log('');
   }
@@ -49,7 +53,7 @@ class _DebugCallbackHandler extends ConsoleCallbackHandler {
 }
 
 export const executeReactAgent = async (
-  context: ToolExecutionContext,
+  context: TaskExecutionContext,
   enabledToolNames: string[],
   input: string,
   toolActionResults: PluginResult[],
@@ -140,7 +144,7 @@ const _parseResult = (tools: Plugin[], result: string): ReactAgentResult => {
 };
 
 export const executeNotConversationalReactAgent = async (
-  context: ToolExecutionContext,
+  context: TaskExecutionContext,
   enabledToolNames: string[],
   input: string,
   toolActionResults: PluginResult[],
@@ -208,15 +212,16 @@ export const parseResultForNotConversational = (
 ): ReactAgentResult => {
   const matchAnswer = result.match(/Final Answer:(.*)/);
   const answer = matchAnswer ? matchAnswer[1] : '';
+  const answerResult: ReactAgentResult = {
+    type: 'answer',
+    answer: answer.trim(),
+  };
 
   // if the positivity is high enough, return the answer
   const matchPositivity = result.match(/\nPositivity:(.*)/);
   if (matchPositivity && parseFloat(matchPositivity[1].trim()) >= 9) {
     if (answer) {
-      return {
-        type: 'answer',
-        answer: answer.trim(),
-      };
+      return answerResult;
     }
   }
 
@@ -234,7 +239,9 @@ export const parseResultForNotConversational = (
   if (thought && action && action.indexOf('None') === -1) {
     const tool = tools.find((t) => t.nameForModel === action);
     if (!tool) {
-      throw new Error(`Tool ${action} not found`);
+      // return the answer if already has for better experience.
+      console.warn(new Error(`Tool ${action} not found`));
+      return answerResult;
     }
     const matchActionInput = result.match(/Action Input: (.*)(\n|$)/);
     const toolInputStr = matchActionInput
@@ -255,8 +262,5 @@ export const parseResultForNotConversational = (
       pluginInput: toolInput,
     };
   }
-  return {
-    type: 'answer',
-    answer: answer.trim(),
-  };
+  return answerResult;
 };

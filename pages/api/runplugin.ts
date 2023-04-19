@@ -24,19 +24,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       taskId,
       model,
       action: toolAction,
+      key,
     } = (await req.body) as RunPluginRequest;
-    const encoding = await getTiktokenEncoding(model?.id || 'gpt-3.5-turbo');
-    const context = createContext(req, encoding, model);
-    try {
-      const toolResult = await executeTool(context, toolAction);
-      const result: PluginResult = {
-        action: toolAction,
-        result: toolResult,
-      };
-      res.status(200).json(result);
-    } finally {
-      encoding.free();
-    }
+    const context = createContext(taskId, req, model, key);
+    const toolResult = await executeTool(context, toolAction);
+    const result: PluginResult = {
+      action: toolAction,
+      result: toolResult,
+    };
+    res.status(200).json(result);
   } catch (error) {
     console.error(error);
     if (error instanceof OpenAIError) {

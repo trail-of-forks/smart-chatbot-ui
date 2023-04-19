@@ -1,10 +1,18 @@
 // This file is derived from:
 // https://github.com/hwchase17/langchainjs/blob/main/langchain/src/tools/requests.ts
-import { extractTextFromHtml } from '@/utils/server/webpage';
+import {
+  calcCosineSimilarity,
+  createEmbedding,
+} from '@/utils/server/similarity';
+import {
+  chunkTextByTokenSize,
+  extractTextFromHtml,
+  extractUrl,
+} from '@/utils/server/webpage';
 
-import { Plugin } from '@/types/agent';
+import { Action, Plugin } from '@/types/agent';
 
-import { ToolExecutionContext } from './executor';
+import { TaskExecutionContext } from './executor';
 
 export interface Headers {
   [key: string]: string;
@@ -21,7 +29,8 @@ export class RequestsGetTool implements Plugin, RequestTool {
 
   constructor(public headers: Headers = {}) {}
 
-  async execute(context: ToolExecutionContext, input: string) {
+  async execute(context: TaskExecutionContext, action: Action) {
+    const input = action.pluginInput;
     const res = await fetch(input, {
       headers: this.headers,
     });
@@ -40,7 +49,8 @@ export class RequestsPostTool implements Plugin, RequestTool {
 
   constructor(public headers: Headers = {}) {}
 
-  async execute(context: ToolExecutionContext, input: string) {
+  async execute(context: TaskExecutionContext, action: Action) {
+    const input = action.pluginInput;
     try {
       const { url, data } = JSON.parse(input);
       const res = await fetch(url, {
@@ -65,18 +75,49 @@ export class RequestsPostTool implements Plugin, RequestTool {
 
 export class RequestsGetWebpageTool implements Plugin, RequestTool {
   nameForHuman = 'requests_get_webpage_content';
-  nameForModel = 'requests_get_webpage_content';
-  displayForUser = false;
+  nameForModel = 'Request Webpage Content';
+  displayForUser = true;
 
   constructor(public headers: Headers = {}) {}
 
-  async execute(context: ToolExecutionContext, input: string) {
-    const res = await fetch(input, {
+  async execute(context: TaskExecutionContext, action: Action) {
+    const input = action.pluginInput;
+    const url = extractUrl(input);
+    if (!url) {
+      throw new Error('invalid input.');
+    }
+    const res = await fetch(url, {
       headers: this.headers,
     });
     const html = await res.text();
-    const text = extractTextFromHtml(context.encoding, html, 500);
-    return text;
+    const text = extractTextFromHtml(html);
+    const encoding = await context.getEncoding();
+    const promises = chunkTextByTokenSize(encoding, text, 200)
+      .slice(0, 10)
+      .map((chunk) =>
+        createEmbedding(chunk, context.apiKey).then((embedding) => {
+          return { chunk, embedding };
+        }),
+      );
+    encoding.free();
+    const thoughtEmbedding = await createEmbedding(
+      action.thought,
+      context.apiKey,
+    );
+    const webEmbeddings = await Promise.all(promises);
+    const sortedWebChunks = webEmbeddings
+      .map(({ chunk, embedding }) => {
+        const similarity = calcCosineSimilarity(thoughtEmbedding, embedding);
+        return { similarity, embedding, chunk };
+      })
+      .sort((a, b) => b.similarity - a.similarity);
+    if (sortedWebChunks.length === 0) {
+      return '';
+    }
+    return sortedWebChunks
+      .map((c) => c.chunk)
+      .slice(0, 5)
+      .join('\n\n');
   }
 
   descriptionForHuman =
@@ -92,7 +133,8 @@ export class RequestsPostWebpageTool implements Plugin, RequestTool {
 
   constructor(public headers: Headers = {}) {}
 
-  async execute(context: ToolExecutionContext, input: string) {
+  async execute(context: TaskExecutionContext, action: Action) {
+    const input = action.pluginInput;
     try {
       const { url, data } = JSON.parse(input);
       const res = await fetch(url, {

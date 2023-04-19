@@ -36,25 +36,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const lastMessage = messages[messages.length - 1];
-    const encoding = await getTiktokenEncoding(model?.id || 'gpt-3.5-turbo');
-    const context = createContext(req, encoding, model, key);
+    const context = createContext(taskId, req, model, key);
     const verbose = process.env.DEBUG_AGENT_LLM_LOGGING === 'true';
-    try {
-      const result = await executeNotConversationalReactAgent(
-        context,
-        enabledToolNames,
-        lastMessage.content,
-        toolActionResults,
-        verbose,
-      );
-      const responseJson = {
-        result,
-        taskId,
-      } as PlanningResponse;
-      res.status(200).json(responseJson);
-    } finally {
-      encoding.free();
-    }
+    const result = await executeNotConversationalReactAgent(
+      context,
+      enabledToolNames,
+      lastMessage.content,
+      toolActionResults,
+      verbose,
+    );
+    const responseJson = {
+      result,
+      taskId,
+    } as PlanningResponse;
+    res.status(200).json(responseJson);
   } catch (error) {
     console.error(error);
     if (error instanceof OpenAIError) {

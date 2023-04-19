@@ -1,11 +1,11 @@
 import { OPENAI_API_HOST } from '@/utils/app/const';
-import { extractTextFromHtml } from '@/utils/server/webpage';
+import { extractTextFromHtml, sliceByTokenSize } from '@/utils/server/webpage';
 
-import { Plugin } from '@/types/agent';
+import { Action, Plugin } from '@/types/agent';
 import { Message } from '@/types/chat';
 import { GoogleSource } from '@/types/google';
 
-import { ToolExecutionContext } from './executor';
+import { TaskExecutionContext } from './executor';
 
 import endent from 'endent';
 
@@ -16,10 +16,11 @@ export default {
   descriptionForModel: 'useful for when you need to ask with google search.',
   displayForUser: true,
   execute: async (
-    context: ToolExecutionContext,
-    query: string,
+    context: TaskExecutionContext,
+    action: Action,
   ): Promise<string> => {
-    const encoding = context.encoding;
+    const encoding = await context.getEncoding();
+    const query = action.pluginInput;
     const encodedQuery = encodeURIComponent(query.trim());
     const apiKey = process.env.GOOGLE_API_KEY;
     const cseId = process.env.GOOGLE_CSE_ID;
@@ -50,7 +51,8 @@ export default {
           ])) as any;
 
           const html = await res.text();
-          const text = extractTextFromHtml(encoding!, html, 400);
+          const textWhole = extractTextFromHtml(html);
+          const text = sliceByTokenSize(encoding!, textWhole, 0, 400);
           if (!text) {
             return {
               ...source,
@@ -133,6 +135,7 @@ export default {
       throw new Error(json.error);
     }
     const answer = json.choices[0].message.content;
+    encoding.free();
     return answer;
   },
 } as Plugin;

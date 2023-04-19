@@ -1,7 +1,7 @@
-import { Plugin, RemotePluginTool } from '@/types/agent';
+import { Action, Plugin, RemotePluginTool } from '@/types/agent';
 
 import { createApiTools, createWebpageTools } from '.';
-import { ToolExecutionContext } from './executor';
+import { TaskExecutionContext } from './executor';
 import google from './google';
 import wikipedia from './wikipedia';
 
@@ -58,7 +58,7 @@ ${plugin.nameForHuman} API useful for? "
 ${plugin.descriptionForHuman}`,
     apiSpec: `Usage Guide: ${plugin.descriptionForHuman}\n\nOpenAPI Spec: ${apiUrlJson}`,
     displayForUser: true,
-    execute: async (ctx: ToolExecutionContext, input: string) => apiSpec,
+    execute: async (ctx: TaskExecutionContext, action: Action) => apiSpec,
   };
 };
 
@@ -94,7 +94,7 @@ export const listTools = async (): Promise<Plugin[]> => {
 
 // list all plugins including private plugins.
 export const listAllTools = async (
-  context: ToolExecutionContext,
+  context: TaskExecutionContext,
 ): Promise<Plugin[]> => {
   const apiTools = createApiTools(context);
   const webTools = createWebpageTools(context);
@@ -104,7 +104,7 @@ export const listAllTools = async (
 };
 // list plugins based on specified plugins
 export const listToolsBySpecifiedPlugins = async (
-  context: ToolExecutionContext,
+  context: TaskExecutionContext,
   pluginNames: string[],
 ): Promise<Plugin[]> => {
   let result: Plugin[] = [];
