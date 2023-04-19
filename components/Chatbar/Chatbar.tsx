@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect } from 'react';
 
 import { useTranslation } from 'next-i18next';
 
+import useConversations from '@/hooks/useConversations';
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 import useFolders from '@/hooks/useFolders';
 
@@ -38,16 +39,10 @@ export const Chatbar = () => {
   });
 
   const {
-    state: {
-      conversations,
-      showChatbar,
-      defaultModelId,
-      chatModeKeys: pluginKeys,
-    },
+    state: { showChatbar, defaultModelId, chatModeKeys: pluginKeys },
     dispatch: homeDispatch,
-    handleNewConversation,
-    handleUpdateConversation,
   } = useContext(HomeContext);
+  const [conversations, conversationsAction] = useConversations();
 
   const {
     state: { searchTerm, filteredConversations },
@@ -139,18 +134,13 @@ export const Chatbar = () => {
         },
       });
 
-    await storageService.removeAllConversations();
-    homeDispatch({ field: 'conversations', value: [] });
-
+    await conversationsAction.clear();
     await foldersAction.clear();
   };
 
   const handleDeleteConversation = async (conversation: Conversation) => {
-    await storageService.removeConversation(conversation.id);
-    const updatedConversations = conversations.filter(
-      (c) => c.id !== conversation.id,
-    );
-    homeDispatch({ field: 'conversations', value: updatedConversations });
+    const updatedConversations = await conversationsAction.remove(conversation);
+
     chatDispatch({ field: 'searchTerm', value: '' });
 
     if (updatedConversations.length > 0) {
@@ -189,7 +179,10 @@ export const Chatbar = () => {
   const handleDrop = (e: any) => {
     if (e.dataTransfer) {
       const conversation = JSON.parse(e.dataTransfer.getData('conversation'));
-      handleUpdateConversation(conversation, { key: 'folderId', value: 0 });
+      conversationsAction.updateValue(conversation, {
+        key: 'folderId',
+        value: 0,
+      });
       chatDispatch({ field: 'searchTerm', value: '' });
       e.target.style.background = 'none';
     }
@@ -240,7 +233,7 @@ export const Chatbar = () => {
           chatDispatch({ field: 'searchTerm', value: searchTerm })
         }
         toggleOpen={handleToggleChatbar}
-        handleCreateItem={handleNewConversation}
+        handleCreateItem={() => conversationsAction.add()}
         handleCreateFolder={() => foldersAction.add(t('New folder'), 'chat')}
         handleDrop={handleDrop}
         footerComponent={<ChatbarSettings />}

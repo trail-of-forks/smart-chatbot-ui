@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from 'react-query';
 
 import { GetServerSideProps } from 'next';
@@ -20,13 +20,9 @@ import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { getSettings } from '@/utils/app/settings';
 
 import { Conversation } from '@/types/chat';
-import { KeyValuePair } from '@/types/data';
 import { OpenAIModelID, OpenAIModels, fallbackModelID } from '@/types/openai';
 
-import { Chat } from '@/components/Chat/Chat';
-import { Chatbar } from '@/components/Chatbar/Chatbar';
-import { Navbar } from '@/components/Mobile/Navbar';
-import Promptbar from '@/components/Promptbar';
+import { HomeMain } from '@/components/Home/HomeMain';
 
 import HomeContext from './home.context';
 import { HomeInitialState, initialState } from './home.state';
@@ -65,8 +61,6 @@ const Home = ({
     dispatch,
   } = contextValue;
 
-  const stopConversationRef = useRef<boolean>(false);
-
   const { data, error } = useQuery(
     ['GetModels', apiKey, serverSideApiKeyIsSet],
     ({ signal }) => {
@@ -98,54 +92,6 @@ const Home = ({
       field: 'selectedConversation',
       value: conversation,
     });
-  };
-
-  // CONVERSATION OPERATIONS  --------------------------------------------
-
-  const handleNewConversation = async () => {
-    const lastConversation = conversations[conversations.length - 1];
-    const settings = getSettings();
-
-    const newConversation: Conversation = {
-      id: uuidv4(),
-      name: `${t('New Conversation')}`,
-      messages: [],
-      model: lastConversation?.model || {
-        id: OpenAIModels[defaultModelId].id,
-        name: OpenAIModels[defaultModelId].name,
-        maxLength: OpenAIModels[defaultModelId].maxLength,
-        tokenLimit: OpenAIModels[defaultModelId].tokenLimit,
-      },
-      prompt: DEFAULT_SYSTEM_PROMPT,
-      temperature: settings.defaultTemperature,
-      folderId: null,
-    };
-
-    const updatedConversations = [...conversations, newConversation];
-
-    await storageService.saveSelectedConversation(newConversation);
-    await storageService.saveConversations(updatedConversations);
-    dispatch({ field: 'selectedConversation', value: newConversation });
-    dispatch({ field: 'conversations', value: updatedConversations });
-
-    dispatch({ field: 'loading', value: false });
-  };
-
-  const handleUpdateConversation = async (
-    conversation: Conversation,
-    data: KeyValuePair,
-  ) => {
-    const updatedConversation = {
-      ...conversation,
-      [data.key]: data.value,
-    };
-
-    const { single, all } = await storageService.updateSelectedConversation(
-      updatedConversation,
-      conversations,
-    );
-    dispatch({ field: 'selectedConversation', value: single });
-    dispatch({ field: 'conversations', value: all });
   };
 
   // EFFECTS  --------------------------------------------
@@ -269,9 +215,7 @@ const Home = ({
     <HomeContext.Provider
       value={{
         ...contextValue,
-        handleNewConversation,
         handleSelectConversation,
-        handleUpdateConversation,
       }}
     >
       <Head>
@@ -284,26 +228,7 @@ const Home = ({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       {selectedConversation && (
-        <main
-          className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${lightMode}`}
-        >
-          <div className="fixed top-0 w-full sm:hidden">
-            <Navbar
-              selectedConversation={selectedConversation}
-              onNewConversation={handleNewConversation}
-            />
-          </div>
-
-          <div className="flex h-full w-full pt-[48px] sm:pt-0">
-            <Chatbar />
-
-            <div className="flex flex-1">
-              <Chat stopConversationRef={stopConversationRef} />
-            </div>
-
-            <Promptbar />
-          </div>
-        </main>
+        <HomeMain selectedConversation={selectedConversation} />
       )}
     </HomeContext.Provider>
   );

@@ -10,6 +10,8 @@ import { FC, memo, useContext, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from 'next-i18next';
 
+import useConversations from '@/hooks/useConversations';
+
 import useStorageService from '@/services/useStorageService';
 
 import { Message } from '@/types/chat';
@@ -31,6 +33,7 @@ interface Props {
 export const ChatMessage: FC<Props> = memo(({ message, messageIndex }) => {
   const { t } = useTranslation('chat');
   const storageService = useStorageService();
+  const [_, conversationsAction] = useConversations();
 
   const {
     state: { selectedConversation, conversations },
@@ -72,13 +75,12 @@ export const ChatMessage: FC<Props> = memo(({ message, messageIndex }) => {
           messages: updatedMessages,
         };
 
-        const { single, all } = await storageService.updateSelectedConversation(
-          updatedConversation,
-          conversations,
-        );
-
-        homeDispatch({ field: 'selectedConversation', value: single });
-        homeDispatch({ field: 'conversations', value: all });
+        await conversationsAction.update(updatedConversation);
+        await storageService.saveSelectedConversation(updatedConversation);
+        homeDispatch({
+          field: 'selectedConversation',
+          value: updatedConversation,
+        });
         homeDispatch({
           field: 'currentMessage',
           value: { ...message, content: messageContent },
@@ -109,12 +111,9 @@ export const ChatMessage: FC<Props> = memo(({ message, messageIndex }) => {
       messages,
     };
 
-    const { single, all } = await storageService.updateSelectedConversation(
-      updatedConversation,
-      conversations,
-    );
-    homeDispatch({ field: 'selectedConversation', value: single });
-    homeDispatch({ field: 'conversations', value: all });
+    await conversationsAction.update(updatedConversation);
+    await storageService.saveSelectedConversation(updatedConversation);
+    homeDispatch({ field: 'selectedConversation', value: updatedConversation });
   };
 
   const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

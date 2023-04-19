@@ -14,6 +14,8 @@ import {
   useState,
 } from 'react';
 
+import useConversations from '@/hooks/useConversations';
+
 import { Conversation } from '@/types/chat';
 
 import HomeContext from '@/pages/api/home/home.context';
@@ -29,10 +31,10 @@ export const ConversationComponent = ({ conversation }: Props) => {
   const {
     state: { selectedConversation, messageIsStreaming },
     handleSelectConversation,
-    handleUpdateConversation,
   } = useContext(HomeContext);
 
   const { handleDeleteConversation } = useContext(ChatbarContext);
+  const [_, conversationsAction] = useConversations();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -56,7 +58,7 @@ export const ConversationComponent = ({ conversation }: Props) => {
 
   const handleRename = (conversation: Conversation) => {
     if (renameValue.trim().length > 0) {
-      handleUpdateConversation(conversation, {
+      conversationsAction.updateValue(conversation, {
         key: 'name',
         value: renameValue,
       });

@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 import useFolders from '@/hooks/useFolders';
+import usePrompts from '@/hooks/usePrompts';
 
 import useStorageService from '@/services/useStorageService';
 
-import { OpenAIModels } from '@/types/openai';
 import { Prompt } from '@/types/prompt';
 
 import HomeContext from '@/pages/api/home/home.context';
@@ -18,19 +18,17 @@ import Sidebar from '../Sidebar';
 import PromptbarContext from './PromptBar.context';
 import { PromptbarInitialState, initialState } from './Promptbar.state';
 
-import { v4 as uuidv4 } from 'uuid';
-
 const Promptbar = () => {
   const { t } = useTranslation('promptbar');
   const [_, foldersAction] = useFolders();
-  const storageService = useStorageService();
+  const [prompts, promptsAction] = usePrompts();
 
   const promptBarContextValue = useCreateReducer<PromptbarInitialState>({
     initialState,
   });
 
   const {
-    state: { prompts, defaultModelId, showPromptbar },
+    state: { showPromptbar },
     dispatch: homeDispatch,
   } = useContext(HomeContext);
 
@@ -45,40 +43,15 @@ const Promptbar = () => {
   };
 
   const handleCreatePrompt = () => {
-    if (defaultModelId) {
-      const newPrompt: Prompt = {
-        id: uuidv4(),
-        name: `Prompt ${prompts.length + 1}`,
-        description: '',
-        content: '',
-        model: OpenAIModels[defaultModelId],
-        folderId: null,
-      };
-
-      const updatedPrompts = [...prompts, newPrompt];
-
-      homeDispatch({ field: 'prompts', value: updatedPrompts });
-      storageService.savePrompts(updatedPrompts);
-    }
+    promptsAction.add();
   };
 
   const handleDeletePrompt = (prompt: Prompt) => {
-    const updatedPrompts = prompts.filter((p) => p.id !== prompt.id);
-
-    homeDispatch({ field: 'prompts', value: updatedPrompts });
-    storageService.savePrompts(updatedPrompts);
+    promptsAction.remove(prompt);
   };
 
   const handleUpdatePrompt = (prompt: Prompt) => {
-    const updatedPrompts = prompts.map((p) => {
-      if (p.id === prompt.id) {
-        return prompt;
-      }
-
-      return p;
-    });
-    homeDispatch({ field: 'prompts', value: updatedPrompts });
-    storageService.savePrompts(updatedPrompts);
+    promptsAction.update(prompt);
   };
 
   const handleDrop = (e: any) => {

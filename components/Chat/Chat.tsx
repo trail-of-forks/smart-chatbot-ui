@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'next-i18next';
 
 import { useChatModeRunner } from '@/hooks/chatmode/useChatModeRunner';
+import useConversations from '@/hooks/useConversations';
 
 import { throttle } from '@/utils/data/throttle';
 
@@ -40,7 +41,6 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
   const {
     state: {
       selectedConversation,
-      conversations,
       models,
       apiKey,
       chatModeKeys: chatModeKeys,
@@ -49,8 +49,8 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
       loading,
       prompts,
     },
-    handleUpdateConversation,
   } = useContext(HomeContext);
+  const [conversations, conversationsAction] = useConversations();
 
   const [currentMessage, setCurrentMessage] = useState<Message>();
   const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true);
@@ -157,7 +157,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
       confirm(t<string>('Are you sure you want to clear all messages?')) &&
       selectedConversation
     ) {
-      handleUpdateConversation(selectedConversation, {
+      conversationsAction.updateValue(selectedConversation, {
         key: 'messages',
         value: [],
       });
@@ -273,10 +273,13 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                         conversation={selectedConversation}
                         prompts={prompts}
                         onChangePrompt={(prompt) =>
-                          handleUpdateConversation(selectedConversation, {
-                            key: 'prompt',
-                            value: prompt,
-                          })
+                          conversationsAction.updateValue(
+                            selectedConversation,
+                            {
+                              key: 'prompt',
+                              value: prompt,
+                            },
+                          )
                         }
                       />
 
@@ -286,10 +289,13 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
 
                       <TemperatureSlider
                         onChangeTemperature={(temperature) =>
-                          handleUpdateConversation(selectedConversation, {
-                            key: 'temperature',
-                            value: temperature,
-                          })
+                          conversationsAction.updateValue(
+                            selectedConversation,
+                            {
+                              key: 'temperature',
+                              value: temperature,
+                            },
+                          )
                         }
                       />
                     </div>

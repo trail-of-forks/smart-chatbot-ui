@@ -17,6 +17,8 @@ import {
 
 import HomeContext from '@/pages/api/home/home.context';
 
+import useConversations from '../useConversations';
+
 export function useAgentMode(
   conversations: Conversation[],
   stopConversationRef: MutableRefObject<boolean>,
@@ -27,6 +29,8 @@ export function useAgentMode(
   const { dispatch: homeDispatch } = useContext(HomeContext);
   const apiService = useApiService();
   const storageService = useStorageService();
+  const [_, conversationsAction] = useConversations();
+
   const updater = new HomeUpdater(homeDispatch);
   const mutation = useMutation({
     mutationFn: async (params: ChatModeRunnerParams): Promise<Answer> => {
@@ -110,8 +114,8 @@ export function useAgentMode(
       if (updatedConversations.length === 0) {
         updatedConversations.push(updatedConversation);
       }
-      homeDispatch({ field: 'conversations', value: updatedConversations });
-      await storageService.saveConversations(updatedConversations);
+      await conversationsAction.updateAll(updatedConversations);
+
       homeDispatch({ field: 'loading', value: false });
       homeDispatch({ field: 'messageIsStreaming', value: false });
     },

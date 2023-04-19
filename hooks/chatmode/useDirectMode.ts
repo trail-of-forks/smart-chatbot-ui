@@ -12,6 +12,8 @@ import { ChatBody, ChatModeRunner, Conversation, Message } from '@/types/chat';
 
 import HomeContext from '@/pages/api/home/home.context';
 
+import useConversations from '../useConversations';
+
 export type ChatPluginParams = {
   body: ChatBody;
   message: Message;
@@ -28,6 +30,8 @@ export function useDirectMode(
   const { dispatch: homeDispatch } = useContext(HomeContext);
   const apiService = useApiService();
   const storageService = useStorageService();
+  const [_, conversationsAction] = useConversations();
+
   const mutation = useMutation({
     mutationFn: async (params: ChatPluginParams) => {
       return apiService.chat(params);
@@ -82,8 +86,7 @@ export function useDirectMode(
       if (updatedConversations.length === 0) {
         updatedConversations.push(updatedConversation);
       }
-      homeDispatch({ field: 'conversations', value: updatedConversations });
-      await storageService.saveConversations(updatedConversations);
+      await conversationsAction.updateAll(updatedConversations);
       homeDispatch({ field: 'messageIsStreaming', value: false });
     },
     onError: async (error) => {
