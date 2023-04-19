@@ -74,6 +74,7 @@ export function useDirectMode(
         updatedConversation,
         stopConversationRef,
       );
+      stopConversationRef.current = false;
       await storageService.saveSelectedConversation(updatedConversation);
       const updatedConversations: Conversation[] = conversations.map(
         (conversation) => {

@@ -6,6 +6,7 @@ import { useMutation } from 'react-query';
 import useApiService from '@/services/useApiService';
 import useStorageService from '@/services/useStorageService';
 
+import { watchRefToAbort } from '@/utils/app/api';
 import { HomeUpdater } from '@/utils/app/homeUpdater';
 
 import { Answer, PlanningResponse, PluginResult } from '@/types/agent';
@@ -42,14 +43,21 @@ export function useAgentMode(
           // todo: handle this
           return { type: 'answer', answer: t('No Result') };
         }
-        const planningResponse: PlanningResponse = await apiService.planning({
-          taskId,
-          key: params.body.key,
-          model: params.body.model,
-          messages: params.body.messages,
-          pluginResults: toolActionResults,
-          enabledToolNames: params.plugins.map((p) => p.nameForModel),
-        });
+        const planningResponse: PlanningResponse = await watchRefToAbort(
+          stopConversationRef,
+          (controller) =>
+            apiService.planning(
+              {
+                taskId,
+                key: params.body.key,
+                model: params.body.model,
+                messages: params.body.messages,
+                pluginResults: toolActionResults,
+                enabledToolNames: params.plugins.map((p) => p.nameForModel),
+              },
+              controller.signal,
+            ),
+        );
         taskId = planningResponse.taskId;
         const { result } = planningResponse;
         if (result.type === 'action') {
@@ -122,7 +130,9 @@ export function useAgentMode(
     onError: async (error) => {
       homeDispatch({ field: 'loading', value: false });
       homeDispatch({ field: 'messageIsStreaming', value: false });
-      if (error instanceof Response) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.error(t('Conversation stopped'));
+      } else if (error instanceof Response) {
         const json = await error.json();
         toast.error(errT(json.error || json.message || 'error'));
       } else {
