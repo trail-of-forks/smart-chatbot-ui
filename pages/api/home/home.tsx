@@ -195,7 +195,7 @@ const Home = ({
         field: 'selectedConversation',
         value: {
           id: uuidv4(),
-          name: 'New conversation',
+          name: t('New Conversation'),
           messages: [],
           model: OpenAIModels[defaultModelId],
           prompt: DEFAULT_SYSTEM_PROMPT,
