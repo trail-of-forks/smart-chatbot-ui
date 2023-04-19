@@ -33,7 +33,7 @@ export const ChatMessage: FC<Props> = memo(({ message, messageIndex }) => {
   const storageService = useStorageService();
 
   const {
-    state: { selectedConversation, conversations, currentMessage },
+    state: { selectedConversation, conversations },
     dispatch: homeDispatch,
   } = useContext(HomeContext);
 

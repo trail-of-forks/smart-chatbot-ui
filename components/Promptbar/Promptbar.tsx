@@ -2,6 +2,7 @@ import { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
+import useFolders from '@/hooks/useFolders';
 
 import useStorageService from '@/services/useStorageService';
 
@@ -21,6 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const Promptbar = () => {
   const { t } = useTranslation('promptbar');
+  const [_, foldersAction] = useFolders();
   const storageService = useStorageService();
 
   const promptBarContextValue = useCreateReducer<PromptbarInitialState>({
@@ -30,7 +32,6 @@ const Promptbar = () => {
   const {
     state: { prompts, defaultModelId, showPromptbar },
     dispatch: homeDispatch,
-    handleCreateFolder,
   } = useContext(HomeContext);
 
   const {
@@ -140,7 +141,7 @@ const Promptbar = () => {
         }
         toggleOpen={handleTogglePromptbar}
         handleCreateItem={handleCreatePrompt}
-        handleCreateFolder={() => handleCreateFolder(t('New folder'), 'prompt')}
+        handleCreateFolder={() => foldersAction.add(t('New folder'), 'prompt')}
         handleDrop={handleDrop}
       />
     </PromptbarContext.Provider>

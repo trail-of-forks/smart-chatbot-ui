@@ -14,6 +14,8 @@ import {
   useState,
 } from 'react';
 
+import useFolders from '@/hooks/useFolders';
+
 import { FolderInterface } from '@/types/folder';
 
 import HomeContext from '@/pages/api/home/home.context';
@@ -33,7 +35,7 @@ const Folder = ({
   handleDrop,
   folderComponent,
 }: Props) => {
-  const { handleDeleteFolder, handleUpdateFolder } = useContext(HomeContext);
+  const [folders, foldersAction] = useFolders();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -47,8 +49,11 @@ const Folder = ({
     }
   };
 
-  const handleRename = () => {
-    handleUpdateFolder(currentFolder.id, renameValue);
+  const handleRename = async () => {
+    foldersAction.update({
+      ...currentFolder,
+      name: renameValue,
+    });
     setRenameValue('');
     setIsRenaming(false);
   };
@@ -138,7 +143,7 @@ const Folder = ({
                 e.stopPropagation();
 
                 if (isDeleting) {
-                  handleDeleteFolder(currentFolder.id);
+                  foldersAction.remove(currentFolder.id);
                 } else if (isRenaming) {
                   handleRename();
                 }

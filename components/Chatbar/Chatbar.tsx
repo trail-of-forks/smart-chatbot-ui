@@ -3,6 +3,7 @@ import { useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
+import useFolders from '@/hooks/useFolders';
 
 import useStorageService from '@/services/useStorageService';
 
@@ -30,6 +31,7 @@ import { v4 as uuidv4 } from 'uuid';
 export const Chatbar = () => {
   const { t } = useTranslation('sidebar');
   const storageService = useStorageService();
+  const [folders, foldersAction] = useFolders();
 
   const chatBarContextValue = useCreateReducer<ChatbarInitialState>({
     initialState,
@@ -40,11 +42,9 @@ export const Chatbar = () => {
       conversations,
       showChatbar,
       defaultModelId,
-      folders,
       chatModeKeys: pluginKeys,
     },
     dispatch: homeDispatch,
-    handleCreateFolder,
     handleNewConversation,
     handleUpdateConversation,
   } = useContext(HomeContext);
@@ -142,9 +142,7 @@ export const Chatbar = () => {
     await storageService.removeAllConversations();
     homeDispatch({ field: 'conversations', value: [] });
 
-    const updatedFolders = folders.filter((f) => f.type !== 'chat');
-    homeDispatch({ field: 'folders', value: updatedFolders });
-    storageService.saveFolders(updatedFolders);
+    await foldersAction.clear();
   };
 
   const handleDeleteConversation = async (conversation: Conversation) => {
@@ -243,7 +241,7 @@ export const Chatbar = () => {
         }
         toggleOpen={handleToggleChatbar}
         handleCreateItem={handleNewConversation}
-        handleCreateFolder={() => handleCreateFolder(t('New folder'), 'chat')}
+        handleCreateFolder={() => foldersAction.add(t('New folder'), 'chat')}
         handleDrop={handleDrop}
         footerComponent={<ChatbarSettings />}
       />
