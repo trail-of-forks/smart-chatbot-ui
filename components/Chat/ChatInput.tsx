@@ -415,7 +415,7 @@ export const ChatInput = ({
         )}
         {isModalVisible && (
           <VariableModal
-            prompt={prompts[activePromptIndex]}
+            prompt={filteredPrompts[activePromptIndex]}
             variables={variables}
             onSubmit={handleSubmit}
             onClose={() => setIsModalVisible(false)}
