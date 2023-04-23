@@ -25,10 +25,11 @@ export const createMessagesToSend = (
       message,
     ];
     const serialized = serializeMessages(model.name, serializingMessages);
-    contentLength = encoding.encode(serialized, 'all').length;
-    if (contentLength + reservedForCompletion > model.tokenLimit) {
+    let encodedLength = encoding.encode(serialized, 'all').length;
+    if (encodedLength + reservedForCompletion > model.tokenLimit) {
       break;
     }
+    contentLength = encodedLength;
     messagesToSend = [message, ...messagesToSend];
   }
   const maxToken = model.tokenLimit - contentLength;
