@@ -1,4 +1,4 @@
-import { FC, useContext } from 'react';
+import { FC, useContext, useEffect } from 'react';
 
 import { useTranslation } from 'next-i18next';
 
@@ -28,6 +28,12 @@ export const SettingDialog: FC<Props> = ({ open, onClose }) => {
     initialState: settings,
   });
   const storageService = useStorageService();
+
+  useEffect(() => {
+    if (open) {
+      dispatch({ type: 'replace_all', value: settings });
+    }
+  }, [dispatch, open, settings]);
 
   const handleSave = async () => {
     await storageService.saveSettings(state);
