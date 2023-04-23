@@ -3,9 +3,10 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { OpenAIStream } from '@/utils/server';
 import { ensureHasValidSession } from '@/utils/server/auth';
+import { createMessagesToSend } from '@/utils/server/message';
 import { getTiktokenEncoding } from '@/utils/server/tiktoken';
 
-import { ChatBodySchema, Message } from '@/types/chat';
+import { ChatBodySchema } from '@/types/chat';
 
 import path from 'node:path';
 
@@ -28,25 +29,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (!systemPromptToSend) {
       systemPromptToSend = DEFAULT_SYSTEM_PROMPT;
     }
-
-    const systemPromptTokens = encoding.encode(systemPromptToSend);
-
-    let totalToken = systemPromptTokens.length;
-    let messagesToSend: Message[] = [];
-    const reservedForAnswer = 1000;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const message = messages[i];
-      const contentLength = encoding.encode(message.content).length;
-      if (totalToken + contentLength + reservedForAnswer > model.tokenLimit) {
-        break;
-      }
-      totalToken += contentLength;
-      messagesToSend = [message, ...messagesToSend];
-    }
+    let { messages: messagesToSend, maxToken } = createMessagesToSend(
+      encoding,
+      model,
+      systemPromptToSend,
+      1000,
+      messages,
+    );
     if (messagesToSend.length === 0) {
       throw new Error('message is too long');
     }
-    const maxToken = model.tokenLimit - totalToken;
     const stream = await OpenAIStream(
       model,
       systemPromptToSend,

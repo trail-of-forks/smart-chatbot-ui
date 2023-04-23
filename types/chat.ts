@@ -3,7 +3,7 @@ import { OpenAIModelSchema } from './openai';
 
 import * as z from 'zod';
 
-export const RoleSchema = z.union([z.literal('assistant'), z.literal('user')]);
+export const RoleSchema = z.union([z.literal('system'), z.literal('assistant'), z.literal('user')]);
 
 export type Role = z.infer<typeof RoleSchema>;
 
