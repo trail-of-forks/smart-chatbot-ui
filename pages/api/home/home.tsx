@@ -5,6 +5,7 @@ import { GetServerSideProps } from 'next';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
@@ -17,6 +18,7 @@ import {
   cleanSelectedConversation,
 } from '@/utils/app/clean';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
+import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
 import { OpenAIModelID, OpenAIModels, fallbackModelID } from '@/types/openai';
@@ -43,6 +45,7 @@ const Home = ({
   const { getModels } = useApiService();
   const storageService = useStorageService();
   const { getModelsError } = useErrorService();
+  const settingsQuery = trpc.settings.get.useQuery();
 
   const contextValue = useCreateReducer<HomeInitialState>({
     initialState,
@@ -112,13 +115,15 @@ const Home = ({
   // ON LOAD --------------------------------------------
 
   useEffect(() => {
-    storageService.getSettings().then((settings) => {
+    if (settingsQuery.data) {
       dispatch({
         field: 'settings',
-        value: settings,
+        value: settingsQuery.data,
       });
-    });
+    }
+  }, [dispatch, settingsQuery.data]);
 
+  useEffect(() => {
     const apiKey = localStorage.getItem('apiKey');
 
     if (serverSideApiKeyIsSet) {
