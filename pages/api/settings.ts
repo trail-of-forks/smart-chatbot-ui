@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ensureHasValidSession, getUserHash } from '@/utils/server/auth';
 import { UserDb } from '@/utils/server/storage';
 
-import { Settings } from '@/types/settings';
+import { Settings, SettingsSchema } from '@/types/settings';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -39,7 +39,9 @@ const post = async (
   res: NextApiResponse,
   userHash: string,
 ) => {
-  const settings = req.body as Settings;
+  const settings = SettingsSchema.parse(req.body);
+  settings.userId = userHash;
+
   const userDb = await UserDb.fromUserHash(userHash);
   await userDb.saveSettings(settings);
   res.status(200).json({ success: true });
