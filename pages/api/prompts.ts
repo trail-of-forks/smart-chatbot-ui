@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ensureHasValidSession, getUserHash } from '@/utils/server/auth';
 import { UserDb } from '@/utils/server/storage';
 
-import { Prompt } from '@/types/prompt';
+import { Prompt, PromptSchemaArray } from '@/types/prompt';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -39,7 +39,7 @@ const post = async (
   res: NextApiResponse,
   userHash: string,
 ) => {
-  const prompts = req.body as Prompt[];
+  const prompts = PromptSchemaArray.parse(req.body as Prompt[]);
   const userDb = await UserDb.fromUserHash(userHash);
   await userDb.savePrompts(prompts);
   res.status(200).json({ success: true });

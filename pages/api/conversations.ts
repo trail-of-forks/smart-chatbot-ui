@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ensureHasValidSession, getUserHash } from '@/utils/server/auth';
 import { UserDb } from '@/utils/server/storage';
 
-import { Conversation } from '@/types/chat';
+import { Conversation, ConversationSchemaArray } from '@/types/chat';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -39,7 +39,7 @@ const post = async (
   res: NextApiResponse,
   userHash: string,
 ) => {
-  const conversations = req.body as Conversation[];
+  const conversations = ConversationSchemaArray.parse(req.body);
   const userDb = await UserDb.fromUserHash(userHash);
   await userDb.saveConversations(conversations);
   res.status(200).json({ success: true });

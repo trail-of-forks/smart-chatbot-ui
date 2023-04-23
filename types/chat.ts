@@ -1,22 +1,30 @@
 import { Plugin } from './agent';
-import { OpenAIModel } from './openai';
+import { OpenAIModelSchema } from './openai';
 
-export interface Message {
-  role: Role;
-  content: string;
-}
+import * as z from 'zod';
 
-export type Role = 'assistant' | 'user';
+export const RoleSchema = z.union([z.literal('assistant'), z.literal('user')]);
 
-export interface ChatBody {
-  model: OpenAIModel;
-  messages: Message[];
-  key: string;
-  prompt: string;
-  temperature: number;
-  googleAPIKey?: string;
-  googleCSEId?: string;
-}
+export type Role = z.infer<typeof RoleSchema>;
+
+export const MessageSchema = z.object({
+  role: RoleSchema,
+  content: z.string(),
+});
+
+export type Message = z.infer<typeof MessageSchema>;
+
+export const ChatBodySchema = z.object({
+  model: OpenAIModelSchema,
+  messages: z.array(MessageSchema),
+  key: z.string(),
+  prompt: z.string(),
+  temperature: z.number(),
+  googleAPIKey: z.string().optional(),
+  googleCSEId: z.string().optional(),
+});
+
+export type ChatBody = z.infer<typeof ChatBodySchema>;
 
 export interface ChatModeRunner {
   run: (params: ChatModeRunnerParams) => void;
@@ -30,12 +38,16 @@ export interface ChatModeRunnerParams {
   plugins: Plugin[];
 }
 
-export interface Conversation {
-  id: string;
-  name: string;
-  messages: Message[];
-  model: OpenAIModel;
-  prompt: string;
-  temperature: number;
-  folderId: string | null;
-}
+export const ConversationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  messages: z.array(MessageSchema),
+  model: OpenAIModelSchema,
+  prompt: z.string(),
+  temperature: z.number(),
+  folderId: z.string().nullable(),
+});
+
+export const ConversationSchemaArray = z.array(ConversationSchema);
+
+export type Conversation = z.infer<typeof ConversationSchema>;

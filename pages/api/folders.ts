@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ensureHasValidSession, getUserHash } from '@/utils/server/auth';
 import { UserDb } from '@/utils/server/storage';
 
-import { FolderInterface } from '@/types/folder';
+import { FolderInterface, FolderSchemaArray } from '@/types/folder';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -39,7 +39,7 @@ const post = async (
   res: NextApiResponse,
   userHash: string,
 ) => {
-  const folders = req.body as FolderInterface[];
+  const folders = FolderSchemaArray.parse(req.body);
   const userDb = await UserDb.fromUserHash(userHash);
   await userDb.saveFolders(folders);
   res.status(200).json({ success: true });
