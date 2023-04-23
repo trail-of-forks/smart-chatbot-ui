@@ -2,8 +2,6 @@ import { FC, useContext, useState } from 'react';
 
 import { useTranslation } from 'next-i18next';
 
-import { getSettings } from '@/utils/app/settings';
-
 import HomeContext from '@/pages/api/home/home.context';
 
 interface Props {
@@ -12,9 +10,8 @@ interface Props {
 
 export const TemperatureSlider: FC<Props> = ({ onChangeTemperature }) => {
   const {
-    state: { conversations },
+    state: { conversations, settings },
   } = useContext(HomeContext);
-  const settings = getSettings();
   const [temperature, setTemperature] = useState(settings.defaultTemperature);
   const { t } = useTranslation('chat');
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

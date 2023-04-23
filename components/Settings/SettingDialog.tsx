@@ -4,7 +4,7 @@ import { useTranslation } from 'next-i18next';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
-import { getSettings, saveSettings } from '@/utils/app/settings';
+import useStorageService from '@/services/useStorageService';
 
 import { Settings } from '@/types/settings';
 
@@ -20,15 +20,18 @@ interface Props {
 
 export const SettingDialog: FC<Props> = ({ open, onClose }) => {
   const { t } = useTranslation('settings');
-  const settings: Settings = getSettings();
+  const {
+    state: { settings },
+    dispatch: homeDispatch,
+  } = useContext(HomeContext);
   const { state, dispatch } = useCreateReducer<Settings>({
     initialState: settings,
   });
-  const { dispatch: homeDispatch } = useContext(HomeContext);
+  const storageService = useStorageService();
 
-  const handleSave = () => {
-    homeDispatch({ field: 'lightMode', value: state.theme });
-    saveSettings(state);
+  const handleSave = async () => {
+    await storageService.saveSettings(state);
+    homeDispatch({ field: 'settings', value: state });
   };
 
   // Render the dialog.

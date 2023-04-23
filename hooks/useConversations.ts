@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import useStorageService from '@/services/useStorageService';
 
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { getSettings } from '@/utils/app/settings';
 
 import { Conversation } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
@@ -34,7 +33,7 @@ export default function useConversations(): [
   const { t: tErr } = useTranslation('error');
   const storageService = useStorageService();
   const {
-    state: { defaultModelId, conversations, selectedConversation },
+    state: { defaultModelId, conversations, selectedConversation, settings },
     dispatch,
   } = useContext(HomeContext);
 
@@ -53,8 +52,6 @@ export default function useConversations(): [
     }
 
     const lastConversation = conversations[conversations.length - 1];
-    const settings = getSettings();
-
     const newConversation: Conversation = {
       id: uuidv4(),
       name: `${t('New Conversation')}`,

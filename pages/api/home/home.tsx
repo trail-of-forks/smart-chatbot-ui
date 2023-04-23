@@ -17,7 +17,6 @@ import {
   cleanSelectedConversation,
 } from '@/utils/app/clean';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { getSettings } from '@/utils/app/settings';
 
 import { Conversation } from '@/types/chat';
 import { OpenAIModelID, OpenAIModels, fallbackModelID } from '@/types/openai';
@@ -50,14 +49,7 @@ const Home = ({
   });
 
   const {
-    state: {
-      apiKey,
-      lightMode,
-      conversations,
-      selectedConversation,
-      prompts,
-      temperature,
-    },
+    state: { apiKey, settings, conversations, selectedConversation, prompts },
     dispatch,
   } = contextValue;
 
@@ -120,13 +112,12 @@ const Home = ({
   // ON LOAD --------------------------------------------
 
   useEffect(() => {
-    const settings = getSettings();
-    if (settings.theme) {
+    storageService.getSettings().then((settings) => {
       dispatch({
-        field: 'lightMode',
-        value: settings.theme,
+        field: 'settings',
+        value: settings,
       });
-    }
+    });
 
     const apiKey = localStorage.getItem('apiKey');
 
@@ -182,6 +173,7 @@ const Home = ({
       const parsedSelectedConversation: Conversation =
         JSON.parse(selectedConversation);
       const cleanedSelectedConversation = cleanSelectedConversation(
+        settings,
         parsedSelectedConversation,
       );
 
@@ -190,7 +182,6 @@ const Home = ({
         value: cleanedSelectedConversation,
       });
     } else {
-      const lastConversation = conversations[conversations.length - 1];
       dispatch({
         field: 'selectedConversation',
         value: {

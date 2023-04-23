@@ -8,9 +8,9 @@ import {
   LatestExportFormat,
   SupportedExportFormats,
 } from '@/types/export';
+import { Settings } from '@/types/settings';
 
 import { cleanConversationHistory } from './clean';
-import { getSettings } from './settings';
 
 export function isExportFormatV1(obj: any): obj is ExportFormatV1 {
   return Array.isArray(obj);
@@ -105,9 +105,9 @@ export const exportData = async (storageService: StorageService) => {
 
 export const importData = async (
   storageService: StorageService,
+  settings: Settings,
   data: SupportedExportFormats,
 ): Promise<LatestExportFormat> => {
-  const settings = getSettings();
   const cleanedData = cleanData(data, {
     temperature: settings.defaultTemperature,
   });

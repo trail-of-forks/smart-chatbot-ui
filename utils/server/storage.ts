@@ -1,6 +1,7 @@
 import { Conversation } from '@/types/chat';
 import { FolderInterface } from '@/types/folder';
 import { Prompt } from '@/types/prompt';
+import { Settings } from '@/types/settings';
 
 import { MONGODB_DB } from '../app/const';
 
@@ -34,16 +35,23 @@ export interface FoldersCollectionItem {
   folders: FolderInterface[];
 }
 
+export interface SettingsCollectionItem {
+  userHash: string;
+  settings: Settings;
+}
+
 export class UserDb {
   private _conversations: Collection<ConversationCollectionItem>;
   private _folders: Collection<FoldersCollectionItem>;
   private _prompts: Collection<PromptsCollectionItem>;
+  private _settings: Collection<SettingsCollectionItem>;
 
   constructor(_db: Db, private _userId: string) {
     this._conversations =
       _db.collection<ConversationCollectionItem>('conversations');
     this._folders = _db.collection<FoldersCollectionItem>('folders');
     this._prompts = _db.collection<PromptsCollectionItem>('prompts');
+    this._settings = _db.collection<SettingsCollectionItem>('settings');
   }
 
   static async fromUserHash(userId: string): Promise<UserDb> {
@@ -109,6 +117,26 @@ export class UserDb {
     return this._prompts.updateOne(
       { userHash: this._userId },
       { $set: { prompts } },
+      { upsert: true },
+    );
+  }
+
+  async getSettings(): Promise<Settings> {
+    const item = await this._settings.findOne({ userHash: this._userId });
+    if (item) {
+      return item.settings;
+    }
+    return {
+      userId: this._userId,
+      theme: 'dark',
+      defaultTemperature: 1.0,
+    };
+  }
+
+  async saveSettings(settings: Settings) {
+    return this._settings.updateOne(
+      { userHash: this._userId },
+      { $set: { settings } },
       { upsert: true },
     );
   }

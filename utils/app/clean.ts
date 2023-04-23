@@ -1,12 +1,14 @@
 import { Conversation } from '@/types/chat';
 import { OpenAIModelID, OpenAIModels } from '@/types/openai';
+import { Settings } from '@/types/settings';
 
 import { DEFAULT_SYSTEM_PROMPT } from './const';
 import { CleaningFallback } from './importExport';
-import { getSettings } from './settings';
 
-export const cleanSelectedConversation = (conversation: Conversation) => {
-  const settings = getSettings();
+export const cleanSelectedConversation = (
+  settings: Settings,
+  conversation: Conversation,
+) => {
   let updatedConversation = conversation;
 
   // check for model on each conversation

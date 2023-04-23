@@ -10,7 +10,6 @@ import useStorageService from '@/services/useStorageService';
 
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { exportData, importData } from '@/utils/app/importExport';
-import { getSettings } from '@/utils/app/settings';
 
 import { Conversation } from '@/types/chat';
 import { ChatModeKey } from '@/types/chatmode';
@@ -39,7 +38,7 @@ export const Chatbar = () => {
   });
 
   const {
-    state: { showChatbar, defaultModelId, chatModeKeys: pluginKeys },
+    state: { showChatbar, defaultModelId, chatModeKeys: pluginKeys, settings },
     dispatch: homeDispatch,
   } = useContext(HomeContext);
   const [conversations, conversationsAction] = useConversations();
@@ -107,6 +106,7 @@ export const Chatbar = () => {
   const handleImportConversations = async (data: SupportedExportFormats) => {
     const { history, folders, prompts }: LatestExportFormat = await importData(
       storageService,
+      settings,
       data,
     );
     homeDispatch({ field: 'conversations', value: history });
@@ -118,7 +118,6 @@ export const Chatbar = () => {
     homeDispatch({ field: 'prompts', value: prompts });
   };
 
-  const settings = getSettings();
   const handleClearConversations = async () => {
     defaultModelId &&
       homeDispatch({

@@ -18,14 +18,13 @@ type HomeMainProps = {
 export const HomeMain = ({ selectedConversation }: HomeMainProps) => {
   const stopConversationRef = useRef<boolean>(false);
   const {
-    state: { lightMode },
-    dispatch,
+    state: { settings },
   } = useContext(HomeContext);
 
-  const [conversations, conversationsAction] = useConversations();
+  const [_, conversationsAction] = useConversations();
   return (
     <main
-      className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${lightMode}`}
+      className={`flex h-screen w-screen flex-col text-sm text-white dark:text-white ${settings.theme}`}
     >
       <div className="fixed top-0 w-full sm:hidden">
         <Navbar
