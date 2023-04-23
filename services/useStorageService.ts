@@ -28,8 +28,6 @@ export interface StorageService {
   ) => Promise<void>;
   getPrompts: (signal?: AbortSignal) => Promise<Prompt[]>;
   savePrompts: (prompts: Prompt[], signal?: AbortSignal) => Promise<void>;
-  getSettings: (signal?: AbortSignal) => Promise<Settings>;
-  saveSettings: (settings: Settings, signal?: AbortSignal) => Promise<void>;
 }
 
 const useStorageService = (): StorageService => {
@@ -162,31 +160,6 @@ const useStorageService = (): StorageService => {
     [fetchService],
   );
 
-  const getSettings = useCallback(
-    (signal?: AbortSignal) => {
-      return fetchService.get<Settings>(`/api/settings`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal,
-      });
-    },
-    [fetchService],
-  );
-
-  const saveSettings = useCallback(
-    (settings: Settings, signal?: AbortSignal): Promise<void> => {
-      return fetchService.post(`/api/settings`, {
-        body: settings,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal,
-      });
-    },
-    [fetchService],
-  );
-
   return {
     getConversations,
     saveConversations,
@@ -198,8 +171,6 @@ const useStorageService = (): StorageService => {
     saveFolders,
     getPrompts,
     savePrompts,
-    getSettings,
-    saveSettings,
   };
 };
 
