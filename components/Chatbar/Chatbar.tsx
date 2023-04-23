@@ -30,6 +30,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const Chatbar = () => {
   const { t } = useTranslation('sidebar');
+  const { t: tChat } = useTranslation('chat');
   const storageService = useStorageService();
   const [folders, foldersAction] = useFolders();
 
@@ -127,7 +128,7 @@ export const Chatbar = () => {
           name: t('New Conversation'),
           messages: [],
           model: OpenAIModels[defaultModelId],
-          prompt: DEFAULT_SYSTEM_PROMPT,
+          prompt: tChat(DEFAULT_SYSTEM_PROMPT),
           temperature: settings.defaultTemperature,
           folderId: null,
         },
@@ -160,7 +161,7 @@ export const Chatbar = () => {
             name: t('New Conversation'),
             messages: [],
             model: OpenAIModels[defaultModelId],
-            prompt: DEFAULT_SYSTEM_PROMPT,
+            prompt: tChat(DEFAULT_SYSTEM_PROMPT),
             temperature: settings.defaultTemperature,
             folderId: null,
           },

@@ -14,11 +14,11 @@ import HomeContext from '@/pages/api/home/home.context';
 import { v4 as uuidv4 } from 'uuid';
 
 type ConversationsAction = {
-  update: (newState: Conversation) => Promise<Conversation[]>;
+  update: (newState: Conversation) => Promise<Conversation>;
   updateValue: (
     conversation: Conversation,
     kv: KeyValuePair,
-  ) => Promise<Conversation[]>;
+  ) => Promise<Conversation>;
   updateAll: (newState: Conversation[]) => Promise<Conversation[]>;
   add: () => Promise<Conversation[]>;
   clear: () => Promise<Conversation[]>;
@@ -62,7 +62,7 @@ export default function useConversations(): [
         maxLength: OpenAIModels[defaultModelId].maxLength,
         tokenLimit: OpenAIModels[defaultModelId].tokenLimit,
       },
-      prompt: DEFAULT_SYSTEM_PROMPT,
+      prompt: t(DEFAULT_SYSTEM_PROMPT),
       temperature: settings.defaultTemperature,
       folderId: null,
     };
@@ -75,19 +75,38 @@ export default function useConversations(): [
     dispatch({ field: 'selectedConversation', value: newConversation });
     dispatch({ field: 'loading', value: false });
     return updatedConversations;
-  }, [conversations, defaultModelId, dispatch, storageService, t, updateAll]);
+  }, [
+    conversations,
+    defaultModelId,
+    dispatch,
+    settings.defaultTemperature,
+    storageService,
+    t,
+    updateAll,
+  ]);
 
   const update = useCallback(
     async (conversation: Conversation) => {
-      const newState = conversations.map((f) => {
+      const newConversations = conversations.map((f) => {
         if (f.id === conversation.id) {
           return conversation;
         }
         return f;
       });
-      return updateAll(newState);
+      await updateAll(newConversations);
+      if (selectedConversation?.id === conversation.id) {
+        await storageService.saveSelectedConversation(conversation);
+        dispatch({ field: 'selectedConversation', value: conversation });
+      }
+      return conversation;
     },
-    [conversations, updateAll],
+    [
+      conversations,
+      dispatch,
+      selectedConversation?.id,
+      storageService,
+      updateAll,
+    ],
   );
 
   const updateValue = useCallback(
@@ -96,12 +115,12 @@ export default function useConversations(): [
         ...conversation,
         [kv.key]: kv.value,
       };
-      const newConversations = await update(updatedConversation);
+      const newState = await update(updatedConversation);
       if (selectedConversation?.id === conversation.id) {
-        storageService.saveSelectedConversation(updatedConversation);
+        await storageService.saveSelectedConversation(updatedConversation);
         dispatch({ field: 'selectedConversation', value: updatedConversation });
       }
-      return newConversations;
+      return newState;
     },
     [dispatch, selectedConversation?.id, storageService, update],
   );

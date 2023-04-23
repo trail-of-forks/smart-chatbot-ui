@@ -14,6 +14,7 @@ import { useTranslation } from 'next-i18next';
 import { useChatModeRunner } from '@/hooks/chatmode/useChatModeRunner';
 import useConversations from '@/hooks/useConversations';
 
+import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { throttle } from '@/utils/data/throttle';
 
 import { Plugin } from '@/types/agent';
@@ -48,6 +49,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
       modelError,
       loading,
       prompts,
+      settings,
     },
   } = useContext(HomeContext);
   const [conversations, conversationsAction] = useConversations();
@@ -57,6 +59,12 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showScrollDownButton, setShowScrollDownButton] =
     useState<boolean>(false);
+  const [systemPrompt, setSystemPrompt] = useState<string>(
+    t(DEFAULT_SYSTEM_PROMPT) || '',
+  );
+  const [temperature, setTemperature] = useState<number>(
+    settings.defaultTemperature,
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -77,28 +85,38 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
       if (!selectedConversation) {
         return;
       }
+      const conversation = selectedConversation;
+      if (
+        conversation.prompt !== systemPrompt ||
+        conversation.temperature !== temperature
+      ) {
+        conversation.prompt = systemPrompt;
+        conversation.temperature = temperature;
+        await conversationsAction.update(conversation);
+      }
+
       let updatedConversation: Conversation;
       if (deleteCount) {
-        const updatedMessages = [...selectedConversation.messages];
+        const updatedMessages = [...conversation.messages];
         for (let i = 0; i < deleteCount; i++) {
           updatedMessages.pop();
         }
         updatedConversation = {
-          ...selectedConversation,
+          ...conversation,
           messages: [...updatedMessages, message],
         };
       } else {
         updatedConversation = {
-          ...selectedConversation,
-          messages: [...selectedConversation.messages, message],
+          ...conversation,
+          messages: [...conversation.messages, message],
         };
       }
       const chatBody: ChatBody = {
         model: updatedConversation.model,
         messages: updatedConversation.messages,
         key: apiKey,
-        prompt: updatedConversation.prompt,
-        temperature: updatedConversation.temperature,
+        prompt: conversation.prompt,
+        temperature: conversation.temperature,
       };
       const chatModeRunner = chatModeSelector(chatMode);
       chatModeRunner.run({
@@ -110,11 +128,12 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
       });
     },
     [
-      apiKey,
-      conversations,
-      chatModeKeys,
       selectedConversation,
-      stopConversationRef,
+      systemPrompt,
+      temperature,
+      conversationsAction,
+      apiKey,
+      chatModeSelector,
     ],
   );
 
@@ -169,8 +188,17 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
       messagesEndRef.current?.scrollIntoView(true);
     }
   };
-  const throttledScrollDown = throttle(scrollDown, 250);
 
+  useEffect(() => {
+    setSystemPrompt(
+      selectedConversation?.prompt ||
+        t(DEFAULT_SYSTEM_PROMPT) ||
+        DEFAULT_SYSTEM_PROMPT,
+    );
+    setTemperature(settings.defaultTemperature);
+  }, [selectedConversation, settings.defaultTemperature, t]);
+
+  const throttledScrollDown = throttle(scrollDown, 250);
   useEffect(() => {
     throttledScrollDown();
     selectedConversation &&
@@ -271,16 +299,9 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
 
                       <SystemPrompt
                         conversation={selectedConversation}
+                        systemPrompt={systemPrompt}
                         prompts={prompts}
-                        onChangePrompt={(prompt) =>
-                          conversationsAction.updateValue(
-                            selectedConversation,
-                            {
-                              key: 'prompt',
-                              value: prompt,
-                            },
-                          )
-                        }
+                        onChangePrompt={(prompt) => setSystemPrompt(prompt)}
                       />
 
                       <label className="mb-2 text-left text-neutral-700 dark:text-neutral-400">
@@ -289,13 +310,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
 
                       <TemperatureSlider
                         onChangeTemperature={(temperature) =>
-                          conversationsAction.updateValue(
-                            selectedConversation,
-                            {
-                              key: 'temperature',
-                              value: temperature,
-                            },
-                          )
+                          setTemperature(temperature)
                         }
                       />
                     </div>
