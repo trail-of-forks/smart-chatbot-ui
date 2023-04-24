@@ -100,7 +100,15 @@ export default function useFolders(): [FolderInterface[], FoldersAction] {
       dispatch({ field: 'prompts', value: updatedPrompts });
       return newState;
     },
-    [conversations, dispatch, folders, prompts, storageService, updateAll],
+    [
+      conversations,
+      dispatch,
+      folders,
+      prompts,
+      promptsUpdateAll,
+      storageService,
+      updateAll,
+    ],
   );
 
   return [
