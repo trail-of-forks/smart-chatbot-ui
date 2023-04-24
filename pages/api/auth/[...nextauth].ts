@@ -3,6 +3,8 @@ import Credentials from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 
+import { getUserHashFromMail } from '@/utils/server/auth';
+
 const providers = [];
 if (process.env.NEXTAUTH_ENABLED === 'false') {
   providers.push(
@@ -12,8 +14,9 @@ if (process.env.NEXTAUTH_ENABLED === 'false') {
       },
       async authorize(credentials: any, req: any) {
         const email = credentials.email.trim();
+        const id = getUserHashFromMail(email);
         return {
-          id: 'a',
+          id,
           email,
         };
       },
