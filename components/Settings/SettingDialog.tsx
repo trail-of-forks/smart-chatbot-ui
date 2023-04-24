@@ -4,7 +4,7 @@ import { useTranslation } from 'next-i18next';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
-import useStorageService from '@/services/useStorageService';
+import { trpc } from '@/utils/trpc';
 
 import { Settings } from '@/types/settings';
 
@@ -27,7 +27,7 @@ export const SettingDialog: FC<Props> = ({ open, onClose }) => {
   const { state, dispatch } = useCreateReducer<Settings>({
     initialState: settings,
   });
-  const storageService = useStorageService();
+  const updateMutation = trpc.settings.settingsUpdate.useMutation();
 
   useEffect(() => {
     if (open) {
@@ -36,7 +36,7 @@ export const SettingDialog: FC<Props> = ({ open, onClose }) => {
   }, [dispatch, open, settings]);
 
   const handleSave = async () => {
-    await storageService.saveSettings(state);
+    await updateMutation.mutate(state);
     homeDispatch({ field: 'settings', value: state });
   };
 

@@ -8,8 +8,10 @@ import {
   LatestExportFormat,
   SupportedExportFormats,
 } from '@/types/export';
+import { Prompt } from '@/types/prompt';
 import { Settings } from '@/types/settings';
 
+import { trpc } from '../trpc';
 import { cleanConversationHistory } from './clean';
 
 export function isExportFormatV1(obj: any): obj is ExportFormatV1 {
@@ -77,10 +79,12 @@ function currentDate() {
   return `${month}-${day}`;
 }
 
-export const exportData = async (storageService: StorageService) => {
+export const exportData = async (
+  storageService: StorageService,
+  prompts: Prompt[],
+) => {
   const history = await storageService.getConversations();
   const folders = await storageService.getFolders();
-  const prompts = await storageService.getPrompts();
 
   const data = {
     version: 4,
@@ -101,25 +105,4 @@ export const exportData = async (storageService: StorageService) => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-};
-
-export const importData = async (
-  storageService: StorageService,
-  settings: Settings,
-  data: SupportedExportFormats,
-): Promise<LatestExportFormat> => {
-  const cleanedData = cleanData(data, {
-    temperature: settings.defaultTemperature,
-  });
-  const { history, folders, prompts } = cleanedData;
-
-  const conversations = history;
-  await storageService.saveConversations(conversations);
-  await storageService.saveFolders(folders);
-  await storageService.savePrompts(prompts);
-  localStorage.setItem(
-    'selectedConversation',
-    JSON.stringify(conversations[conversations.length - 1]),
-  );
-  return cleanedData;
 };

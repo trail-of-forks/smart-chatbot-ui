@@ -17,6 +17,7 @@ import {
   cleanSelectedConversation,
 } from '@/utils/app/clean';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
+import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
 import { OpenAIModelID, OpenAIModels, fallbackModelID } from '@/types/openai';
@@ -43,6 +44,8 @@ const Home = ({
   const { getModels } = useApiService();
   const storageService = useStorageService();
   const { getModelsError } = useErrorService();
+  const settingsQuery = trpc.settings.get.useQuery();
+  const promptsQuery = trpc.prompts.list.useQuery();
 
   const contextValue = useCreateReducer<HomeInitialState>({
     initialState,
@@ -112,13 +115,21 @@ const Home = ({
   // ON LOAD --------------------------------------------
 
   useEffect(() => {
-    storageService.getSettings().then((settings) => {
+    if (settingsQuery.data) {
       dispatch({
         field: 'settings',
-        value: settings,
+        value: settingsQuery.data,
       });
-    });
+    }
+  }, [dispatch, settingsQuery.data]);
 
+  useEffect(() => {
+    if (promptsQuery.data) {
+      dispatch({ field: 'prompts', value: promptsQuery.data });
+    }
+  }, [dispatch, promptsQuery.data]);
+
+  useEffect(() => {
     const apiKey = localStorage.getItem('apiKey');
 
     if (serverSideApiKeyIsSet) {
@@ -154,10 +165,6 @@ const Home = ({
 
     storageService.getFolders().then((folders) => {
       dispatch({ field: 'folders', value: folders });
-    });
-
-    storageService.getPrompts().then((prompts) => {
-      dispatch({ field: 'prompts', value: prompts });
     });
 
     storageService.getConversations().then((conversations) => {

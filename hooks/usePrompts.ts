@@ -1,7 +1,7 @@
 import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import useStorageService from '@/services/useStorageService';
+import { trpc } from '@/utils/trpc';
 
 import { OpenAIModels } from '@/types/openai';
 import { Prompt } from '@/types/prompt';
@@ -19,19 +19,19 @@ type PromptsAction = {
 
 export default function usePrompts(): [Prompt[], PromptsAction] {
   const { t: tErr } = useTranslation('error');
-  const storageService = useStorageService();
   const {
     state: { defaultModelId, prompts },
     dispatch,
   } = useContext(HomeContext);
+  const promptsUpdateAll = trpc.prompts.updateAll.useMutation();
 
   const updateAll = useCallback(
     async (updated: Prompt[]): Promise<Prompt[]> => {
-      await storageService.savePrompts(updated);
+      await promptsUpdateAll.mutateAsync(updated);
       dispatch({ field: 'prompts', value: updated });
       return updated;
     },
-    [dispatch, storageService],
+    [dispatch, promptsUpdateAll],
   );
 
   const add = useCallback(async () => {

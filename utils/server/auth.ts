@@ -27,6 +27,10 @@ export const getUserHash = async (
   if (!email) {
     throw new Error('Unauthorized. No email found in session');
   }
+  return getUserHashFromMail(email);
+};
+
+export const getUserHashFromMail = (email: string): string => {
   const hash = crypto.createHash('sha256').update(email).digest('hex');
   return hash;
 };

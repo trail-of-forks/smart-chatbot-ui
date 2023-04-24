@@ -134,6 +134,7 @@ export class UserDb {
   }
 
   async saveSettings(settings: Settings) {
+    settings.userId = this._userId;
     return this._settings.updateOne(
       { userHash: this._userId },
       { $set: { settings } },
