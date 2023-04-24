@@ -12,7 +12,7 @@ import { useTranslation } from 'next-i18next';
 import { Conversation } from '@/types/chat';
 import { Prompt } from '@/types/prompt';
 
-import { Textarea } from '@/components/Input/PromptTextarea';
+import { Textarea } from '@/components/Input/Textarea';
 
 import { PromptList } from './PromptList';
 import { VariableModal } from './VariableModal';

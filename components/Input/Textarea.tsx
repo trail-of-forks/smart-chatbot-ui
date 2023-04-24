@@ -27,7 +27,7 @@ export const Textarea = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (isTyping || e.key !== 'Enter') {
+      if (isTyping) {
         return;
       }
       onKeyDown?.call(e, e);
