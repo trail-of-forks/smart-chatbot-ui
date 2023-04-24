@@ -24,6 +24,8 @@ export default function usePrompts(): [Prompt[], PromptsAction] {
     dispatch,
   } = useContext(HomeContext);
   const promptsUpdateAll = trpc.prompts.updateAll.useMutation();
+  const promptsUpdate = trpc.prompts.update.useMutation();
+  const promptRemove = trpc.prompts.remove.useMutation();
 
   const updateAll = useCallback(
     async (updated: Prompt[]): Promise<Prompt[]> => {
@@ -47,9 +49,11 @@ export default function usePrompts(): [Prompt[], PromptsAction] {
       model: OpenAIModels[defaultModelId],
       folderId: null,
     };
-    const newState = [...prompts, newPrompt];
-    return updateAll(newState);
-  }, [defaultModelId, prompts, tErr, updateAll]);
+    await promptsUpdate.mutateAsync(newPrompt);
+    const newState = [newPrompt, ...prompts];
+    dispatch({ field: 'prompts', value: newState });
+    return newState;
+  }, [defaultModelId, dispatch, prompts, promptsUpdate, tErr]);
 
   const update = useCallback(
     async (prompt: Prompt) => {
@@ -59,17 +63,21 @@ export default function usePrompts(): [Prompt[], PromptsAction] {
         }
         return f;
       });
-      return updateAll(newState);
+      await promptsUpdate.mutateAsync(prompt);
+      dispatch({ field: 'prompts', value: newState });
+      return newState;
     },
-    [prompts, updateAll],
+    [dispatch, prompts, promptsUpdate],
   );
 
   const remove = useCallback(
     async (prompt: Prompt) => {
       const newState = prompts.filter((f) => f.id !== prompt.id);
-      return await updateAll(newState);
+      await promptRemove.mutateAsync({ id: prompt.id });
+      dispatch({ field: 'prompts', value: newState });
+      return newState;
     },
-    [prompts, updateAll],
+    [dispatch, promptRemove, prompts],
   );
 
   return [

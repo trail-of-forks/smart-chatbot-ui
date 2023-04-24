@@ -23,6 +23,9 @@ type FoldersAction = {
 export default function useFolders(): [FolderInterface[], FoldersAction] {
   const storageService = useStorageService();
   const promptsUpdateAll = trpc.prompts.updateAll.useMutation();
+  const folderUpdate = trpc.folders.update.useMutation();
+  const folderRemove = trpc.folders.remove.useMutation();
+  const folderRemoveAll = trpc.folders.removeAll.useMutation();
   const {
     state: { folders, conversations, prompts },
     dispatch,
@@ -44,10 +47,12 @@ export default function useFolders(): [FolderInterface[], FoldersAction] {
         name,
         type,
       };
-      const newState = [...folders, newFolder];
-      return updateAll(newState);
+      const newState = [newFolder, ...folders];
+      await folderUpdate.mutateAsync(newFolder);
+      dispatch({ field: 'folders', value: newState });
+      return newState;
     },
-    [folders, updateAll],
+    [dispatch, folderUpdate, folders],
   );
 
   const update = useCallback(
@@ -58,20 +63,25 @@ export default function useFolders(): [FolderInterface[], FoldersAction] {
         }
         return f;
       });
-      return updateAll(newState);
+      await folderUpdate.mutateAsync(folder);
+      dispatch({ field: 'folders', value: newState });
+      return newState;
     },
-    [folders, updateAll],
+    [dispatch, folderUpdate, folders],
   );
 
   const clear = useCallback(async () => {
     const newState = folders.filter((f) => f.type !== 'chat');
-    return updateAll(newState);
-  }, [folders, updateAll]);
+    await folderRemoveAll.mutateAsync({ type: 'chat' });
+    dispatch({ field: 'folders', value: newState });
+    return newState;
+  }, [dispatch, folderRemoveAll, folders]);
 
   const remove = useCallback(
     async (folderId: string) => {
       const newState = folders.filter((f) => f.id !== folderId);
-      await updateAll(newState);
+      await folderRemove.mutateAsync({ id: folderId });
+      dispatch({ field: 'folders', value: newState });
 
       const updatedConversations: Conversation[] = conversations.map((c) => {
         if (c.folderId === folderId) {
@@ -103,11 +113,11 @@ export default function useFolders(): [FolderInterface[], FoldersAction] {
     [
       conversations,
       dispatch,
+      folderRemove,
       folders,
       prompts,
       promptsUpdateAll,
       storageService,
-      updateAll,
     ],
   );
 

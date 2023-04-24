@@ -181,7 +181,7 @@ export const Chatbar = () => {
       const conversation = JSON.parse(e.dataTransfer.getData('conversation'));
       conversationsAction.updateValue(conversation, {
         key: 'folderId',
-        value: 0,
+        value: null,
       });
       chatDispatch({ field: 'searchTerm', value: '' });
       e.target.style.background = 'none';
