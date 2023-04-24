@@ -22,21 +22,21 @@ export async function getDb(): Promise<Db> {
 }
 
 export interface ConversationCollectionItem {
-  userHash: string;
+  userId: string;
   conversation: Conversation;
 }
 export interface PromptsCollectionItem {
-  userHash: string;
+  userId: string;
   prompt: Prompt;
 }
 
 export interface FoldersCollectionItem {
-  userHash: string;
+  userId: string;
   folder: FolderInterface;
 }
 
 export interface SettingsCollectionItem {
-  userHash: string;
+  userId: string;
   settings: Settings;
 }
 
@@ -61,7 +61,7 @@ export class UserDb {
   async getConversations(): Promise<Conversation[]> {
     return (
       await this._conversations
-        .find({ userHash: this._userId })
+        .find({ userId: this._userId })
         .sort({ _id: -1 })
         .toArray()
     ).map((item) => item.conversation);
@@ -69,7 +69,7 @@ export class UserDb {
 
   async saveConversation(conversation: Conversation) {
     return this._conversations.updateOne(
-      { userHash: this._userId, 'conversation.id': conversation.id },
+      { userId: this._userId, 'conversation.id': conversation.id },
       { $set: { conversation } },
       { upsert: true },
     );
@@ -82,18 +82,18 @@ export class UserDb {
   }
   removeConversation(id: string) {
     this._conversations.deleteOne({
-      userHash: this._userId,
+      userId: this._userId,
       'conversation.id': id,
     });
   }
 
   removeAllConversations() {
-    this._conversations.deleteMany({ userHash: this._userId });
+    this._conversations.deleteMany({ userId: this._userId });
   }
 
   async getFolders(): Promise<FolderInterface[]> {
     const items = await this._folders
-      .find({ userHash: this._userId })
+      .find({ userId: this._userId })
       .sort({ 'folder.name': 1 })
       .toArray();
     return items.map((item) => item.folder);
@@ -101,7 +101,7 @@ export class UserDb {
 
   async saveFolder(folder: FolderInterface) {
     return this._folders.updateOne(
-      { userHash: this._userId, 'folder.id': folder.id },
+      { userId: this._userId, 'folder.id': folder.id },
       { $set: { folder } },
       { upsert: true },
     );
@@ -115,21 +115,21 @@ export class UserDb {
 
   async removeFolder(id: string) {
     return this._folders.deleteOne({
-      userHash: this._userId,
+      userId: this._userId,
       'folder.id': id,
     });
   }
 
   async removeAllFolders(type: string) {
     return this._folders.deleteMany({
-      userHash: this._userId,
+      userId: this._userId,
       'folder.type': type,
     });
   }
 
   async getPrompts(): Promise<Prompt[]> {
     const items = await this._prompts
-      .find({ userHash: this._userId })
+      .find({ userId: this._userId })
       .sort({ 'prompt.name': 1 })
       .toArray();
     return items.map((item) => item.prompt);
@@ -137,7 +137,7 @@ export class UserDb {
 
   async savePrompt(prompt: Prompt) {
     return this._prompts.updateOne(
-      { userHash: this._userId, 'prompt.id': prompt.id },
+      { userId: this._userId, 'prompt.id': prompt.id },
       { $set: { prompt } },
       { upsert: true },
     );
@@ -151,13 +151,13 @@ export class UserDb {
 
   async removePrompt(id: string) {
     return this._prompts.deleteOne({
-      userHash: this._userId,
+      userId: this._userId,
       'prompt.id': id,
     });
   }
 
   async getSettings(): Promise<Settings> {
-    const item = await this._settings.findOne({ userHash: this._userId });
+    const item = await this._settings.findOne({ userId: this._userId });
     if (item) {
       return item.settings;
     }
@@ -171,7 +171,7 @@ export class UserDb {
   async saveSettings(settings: Settings) {
     settings.userId = this._userId;
     return this._settings.updateOne(
-      { userHash: this._userId },
+      { userId: this._userId },
       { $set: { settings } },
       { upsert: true },
     );
