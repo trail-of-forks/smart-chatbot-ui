@@ -12,7 +12,7 @@ import { useTranslation } from 'next-i18next';
 import { Conversation } from '@/types/chat';
 import { Prompt } from '@/types/prompt';
 
-import { PromptTextarea } from '@/components/Input/PromptTextarea';
+import { Textarea } from '@/components/Input/PromptTextarea';
 
 import { PromptList } from './PromptList';
 import { VariableModal } from './VariableModal';
@@ -191,7 +191,7 @@ export const SystemPrompt: FC<Props> = ({
       <label className="mb-2 text-left text-neutral-700 dark:text-neutral-400">
         {t('System Prompt')}
       </label>
-      <PromptTextarea
+      <Textarea
         textareaRef={textareaRef}
         className="w-full rounded-lg border border-neutral-200 bg-transparent px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-neutral-100"
         style={{

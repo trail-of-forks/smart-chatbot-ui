@@ -1,12 +1,17 @@
 import { FC, useEffect, useRef } from 'react';
 
-interface Props {
+type Props = {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
-}
+} & React.HTMLAttributes<HTMLDivElement>;
 
-export const Dialog: FC<Props> = ({ open, onClose, children }) => {
+export const Dialog: FC<Props> = ({
+  open,
+  onClose,
+  children,
+  ...restProps
+}) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +40,10 @@ export const Dialog: FC<Props> = ({ open, onClose, children }) => {
 
   // Render the dialog.
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+      {...restProps}
+    >
       <div className="fixed inset-0 z-10 overflow-hidden">
         <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
           <div
