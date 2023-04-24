@@ -60,7 +60,7 @@ const Promptbar = () => {
 
       const updatedPrompt = {
         ...prompt,
-        folderId: e.target.dataset.folderId,
+        folderId: e.target.dataset.folderId || null,
       };
 
       handleUpdatePrompt(updatedPrompt);

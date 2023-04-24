@@ -27,12 +27,12 @@ export interface ConversationCollectionItem {
 }
 export interface PromptsCollectionItem {
   userHash: string;
-  prompts: Prompt[];
+  prompt: Prompt;
 }
 
 export interface FoldersCollectionItem {
   userHash: string;
-  folders: FolderInterface[];
+  folder: FolderInterface;
 }
 
 export interface SettingsCollectionItem {
@@ -60,12 +60,14 @@ export class UserDb {
 
   async getConversations(): Promise<Conversation[]> {
     return (
-      await this._conversations.find({ userHash: this._userId }).toArray()
+      await this._conversations
+        .find({ userHash: this._userId })
+        .sort({ _id: -1 })
+        .toArray()
     ).map((item) => item.conversation);
   }
 
   async saveConversation(conversation: Conversation) {
-    // upsert
     return this._conversations.updateOne(
       { userHash: this._userId, 'conversation.id': conversation.id },
       { $set: { conversation } },
@@ -90,35 +92,68 @@ export class UserDb {
   }
 
   async getFolders(): Promise<FolderInterface[]> {
-    const item = await this._folders.findOne({ userHash: this._userId });
-    if (item) {
-      return item.folders;
-    }
-    return [];
+    const items = await this._folders
+      .find({ userHash: this._userId })
+      .sort({ 'folder.name': 1 })
+      .toArray();
+    return items.map((item) => item.folder);
+  }
+
+  async saveFolder(folder: FolderInterface) {
+    return this._folders.updateOne(
+      { userHash: this._userId, 'folder.id': folder.id },
+      { $set: { folder } },
+      { upsert: true },
+    );
   }
 
   async saveFolders(folders: FolderInterface[]) {
-    return this._folders.updateOne(
-      { userHash: this._userId },
-      { $set: { folders } },
-      { upsert: true },
-    );
+    for (const folder of folders) {
+      await this.saveFolder(folder);
+    }
+  }
+
+  async removeFolder(id: string) {
+    return this._folders.deleteOne({
+      userHash: this._userId,
+      'folder.id': id,
+    });
+  }
+
+  async removeAllFolders(type: string) {
+    return this._folders.deleteMany({
+      userHash: this._userId,
+      'folder.type': type,
+    });
   }
 
   async getPrompts(): Promise<Prompt[]> {
-    const item = await this._prompts.findOne({ userHash: this._userId });
-    if (item) {
-      return item.prompts;
-    }
-    return [];
+    const items = await this._prompts
+      .find({ userHash: this._userId })
+      .sort({ 'prompt.name': 1 })
+      .toArray();
+    return items.map((item) => item.prompt);
+  }
+
+  async savePrompt(prompt: Prompt) {
+    return this._prompts.updateOne(
+      { userHash: this._userId, 'prompt.id': prompt.id },
+      { $set: { prompt } },
+      { upsert: true },
+    );
   }
 
   async savePrompts(prompts: Prompt[]) {
-    return this._prompts.updateOne(
-      { userHash: this._userId },
-      { $set: { prompts } },
-      { upsert: true },
-    );
+    for (const prompt of prompts) {
+      await this.savePrompt(prompt);
+    }
+  }
+
+  async removePrompt(id: string) {
+    return this._prompts.deleteOne({
+      userHash: this._userId,
+      'prompt.id': id,
+    });
   }
 
   async getSettings(): Promise<Settings> {

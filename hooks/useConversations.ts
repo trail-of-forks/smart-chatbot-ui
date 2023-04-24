@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import useStorageService from '@/services/useStorageService';
 
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
+import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
 import { KeyValuePair } from '@/types/data';
@@ -32,6 +33,9 @@ export default function useConversations(): [
   const { t } = useTranslation('chat');
   const { t: tErr } = useTranslation('error');
   const storageService = useStorageService();
+  const conversationUpdate = trpc.conversations.update.useMutation();
+  const conversationRemove = trpc.conversations.remove.useMutation();
+  const conversationRemoveAll = trpc.conversations.removeAll.useMutation();
   const {
     state: { defaultModelId, conversations, selectedConversation, settings },
     dispatch,
@@ -67,22 +71,22 @@ export default function useConversations(): [
       folderId: null,
     };
 
-    const updatedConversations = await updateAll([
-      ...conversations,
-      newConversation,
-    ]);
+    await conversationUpdate.mutateAsync(newConversation);
+    const newState = [newConversation, ...conversations];
+    dispatch({ field: 'conversations', value: newState });
+
     await storageService.saveSelectedConversation(newConversation);
     dispatch({ field: 'selectedConversation', value: newConversation });
     dispatch({ field: 'loading', value: false });
-    return updatedConversations;
+    return newState;
   }, [
+    conversationUpdate,
     conversations,
     defaultModelId,
     dispatch,
     settings.defaultTemperature,
     storageService,
     t,
-    updateAll,
   ]);
 
   const update = useCallback(
@@ -93,7 +97,8 @@ export default function useConversations(): [
         }
         return f;
       });
-      await updateAll(newConversations);
+      await conversationUpdate.mutateAsync(conversation);
+      dispatch({ field: 'conversations', value: newConversations });
       if (selectedConversation?.id === conversation.id) {
         await storageService.saveSelectedConversation(conversation);
         dispatch({ field: 'selectedConversation', value: conversation });
@@ -101,11 +106,11 @@ export default function useConversations(): [
       return conversation;
     },
     [
+      conversationUpdate,
       conversations,
       dispatch,
       selectedConversation?.id,
       storageService,
-      updateAll,
     ],
   );
 
@@ -127,21 +132,21 @@ export default function useConversations(): [
 
   const remove = useCallback(
     async (conversation: Conversation) => {
-      await storageService.removeConversation(conversation.id);
+      await conversationRemove.mutateAsync({ id: conversation.id });
       const updatedConversations = conversations.filter(
         (c) => c.id !== conversation.id,
       );
       dispatch({ field: 'conversations', value: updatedConversations });
       return updatedConversations;
     },
-    [conversations, dispatch, storageService],
+    [conversationRemove, conversations, dispatch],
   );
 
   const clear = useCallback(async () => {
-    await storageService.removeAllConversations();
+    await conversationRemoveAll.mutateAsync();
     dispatch({ field: 'conversations', value: [] });
     return [];
-  }, [dispatch, storageService]);
+  }, [conversationRemoveAll, dispatch]);
 
   return [
     conversations,
