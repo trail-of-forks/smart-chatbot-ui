@@ -6,7 +6,7 @@ import { Prompt } from '@/types/prompt';
 
 import { Dialog } from '@/components/Dialog/Dialog';
 import { InputText } from '@/components/Input/InputText';
-import { Textarea } from '@/components/Input/PromptTextarea';
+import { Textarea } from '@/components/Input/Textarea';
 
 interface Props {
   open: boolean;
