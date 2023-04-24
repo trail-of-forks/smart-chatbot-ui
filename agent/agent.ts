@@ -9,7 +9,7 @@ import chalk from 'chalk';
 import { CallbackManager, ConsoleCallbackHandler } from 'langchain/callbacks';
 import { LLMChain } from 'langchain/chains';
 import { LLMResult } from 'langchain/dist/schema';
-import { OpenAI, OpenAIChat } from 'langchain/llms/openai';
+import { OpenAI } from 'langchain/llms/openai';
 import { PromptTemplate } from 'langchain/prompts';
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 
@@ -32,21 +32,21 @@ class _DebugCallbackHandler extends ConsoleCallbackHandler {
       name: string;
     },
     prompts: string[],
-    verbose?: boolean,
+    runId: string,
   ): Promise<void> {
     this.llmStartTime = Date.now();
     console.log(chalk.greenBright('handleLLMStart ============'));
     console.log(prompts[0]);
     console.log('');
   }
-  async handleLLMEnd(output: LLMResult, verbose?: boolean): Promise<void> {
+  async handleLLMEnd(output: LLMResult, runId: string) {
     const duration = Date.now() - this.llmStartTime;
     console.log(chalk.greenBright('handleLLMEnd =============='));
     console.log(`ellapsed: ${duration / 1000} sec.`);
     console.log(output.generations[0][0].text);
     console.log('');
   }
-  async handleText(text: string, verbose?: boolean): Promise<void> {
+  async handleText(text: string): Promise<void> {
     console.log(chalk.greenBright('handleText =========='));
     console.log(text);
     console.log('');
