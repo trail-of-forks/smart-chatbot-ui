@@ -5,7 +5,6 @@ import { GetServerSideProps } from 'next';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
@@ -46,6 +45,7 @@ const Home = ({
   const storageService = useStorageService();
   const { getModelsError } = useErrorService();
   const settingsQuery = trpc.settings.get.useQuery();
+  const promptsQuery = trpc.prompts.list.useQuery();
 
   const contextValue = useCreateReducer<HomeInitialState>({
     initialState,
@@ -124,6 +124,12 @@ const Home = ({
   }, [dispatch, settingsQuery.data]);
 
   useEffect(() => {
+    if (promptsQuery.data) {
+      dispatch({ field: 'prompts', value: promptsQuery.data });
+    }
+  }, [dispatch, promptsQuery.data]);
+
+  useEffect(() => {
     const apiKey = localStorage.getItem('apiKey');
 
     if (serverSideApiKeyIsSet) {
@@ -159,10 +165,6 @@ const Home = ({
 
     storageService.getFolders().then((folders) => {
       dispatch({ field: 'folders', value: folders });
-    });
-
-    storageService.getPrompts().then((prompts) => {
-      dispatch({ field: 'prompts', value: prompts });
     });
 
     storageService.getConversations().then((conversations) => {

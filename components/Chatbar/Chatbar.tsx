@@ -4,12 +4,13 @@ import { useTranslation } from 'next-i18next';
 
 import useConversations from '@/hooks/useConversations';
 import { useCreateReducer } from '@/hooks/useCreateReducer';
+import { useExporter } from '@/hooks/useExporter';
 import useFolders from '@/hooks/useFolders';
+import { useImporter } from '@/hooks/useImporter';
 
 import useStorageService from '@/services/useStorageService';
 
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { exportData, importData } from '@/utils/app/importExport';
 
 import { Conversation } from '@/types/chat';
 import { ChatModeKey } from '@/types/chatmode';
@@ -33,6 +34,8 @@ export const Chatbar = () => {
   const { t: tChat } = useTranslation('chat');
   const storageService = useStorageService();
   const [folders, foldersAction] = useFolders();
+  const exporter = useExporter();
+  const importer = useImporter();
 
   const chatBarContextValue = useCreateReducer<ChatbarInitialState>({
     initialState,
@@ -101,15 +104,12 @@ export const Chatbar = () => {
   };
 
   const handleExportData = async () => {
-    return exportData(storageService);
+    return exporter.exportData();
   };
 
   const handleImportConversations = async (data: SupportedExportFormats) => {
-    const { history, folders, prompts }: LatestExportFormat = await importData(
-      storageService,
-      settings,
-      data,
-    );
+    const { history, folders, prompts }: LatestExportFormat =
+      await importer.importData(settings, data);
     homeDispatch({ field: 'conversations', value: history });
     homeDispatch({
       field: 'selectedConversation',

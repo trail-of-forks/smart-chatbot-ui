@@ -2,6 +2,8 @@ import { useCallback, useContext } from 'react';
 
 import useStorageService from '@/services/useStorageService';
 
+import { trpc } from '@/utils/trpc';
+
 import { Conversation } from '@/types/chat';
 import { FolderInterface, FolderType } from '@/types/folder';
 import { Prompt } from '@/types/prompt';
@@ -20,6 +22,7 @@ type FoldersAction = {
 
 export default function useFolders(): [FolderInterface[], FoldersAction] {
   const storageService = useStorageService();
+  const promptsUpdateAll = trpc.prompts.updateAll.useMutation();
   const {
     state: { folders, conversations, prompts },
     dispatch,
@@ -93,7 +96,7 @@ export default function useFolders(): [FolderInterface[], FoldersAction] {
         return p;
       });
 
-      await storageService.savePrompts(updatedPrompts);
+      await promptsUpdateAll.mutateAsync(updatedPrompts);
       dispatch({ field: 'prompts', value: updatedPrompts });
       return newState;
     },

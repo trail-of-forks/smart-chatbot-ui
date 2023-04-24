@@ -4,8 +4,6 @@ import { useFetch } from '@/hooks/useFetch';
 
 import { Conversation } from '@/types/chat';
 import { FolderInterface } from '@/types/folder';
-import { Prompt } from '@/types/prompt';
-import { Settings } from '@/types/settings';
 
 export interface StorageService {
   getConversations: (signal?: AbortSignal) => Promise<Conversation[]>;
@@ -26,8 +24,6 @@ export interface StorageService {
     folders: FolderInterface[],
     signal?: AbortSignal,
   ) => Promise<void>;
-  getPrompts: (signal?: AbortSignal) => Promise<Prompt[]>;
-  savePrompts: (prompts: Prompt[], signal?: AbortSignal) => Promise<void>;
 }
 
 const useStorageService = (): StorageService => {
@@ -135,31 +131,6 @@ const useStorageService = (): StorageService => {
     [fetchService],
   );
 
-  const getPrompts = useCallback(
-    (signal?: AbortSignal) => {
-      return fetchService.get<Prompt[]>(`/api/prompts`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal,
-      });
-    },
-    [fetchService],
-  );
-
-  const savePrompts = useCallback(
-    (prompts: Prompt[], signal?: AbortSignal): Promise<void> => {
-      return fetchService.post(`/api/prompts`, {
-        body: prompts,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal,
-      });
-    },
-    [fetchService],
-  );
-
   return {
     getConversations,
     saveConversations,
@@ -169,8 +140,6 @@ const useStorageService = (): StorageService => {
     updateSelectedConversation,
     getFolders,
     saveFolders,
-    getPrompts,
-    savePrompts,
   };
 };
 
