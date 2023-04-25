@@ -1,4 +1,7 @@
-#!/bin/bash -ue -o pipefail
+#!/bin/bash
+
+set -euo pipefail
+
 # Create a dump from the MongoDB container running in local docker environment.
 
 mongo_user=$(cat .env.local|grep MONGO_INITDB_ROOT_USERNAME|cut -d '=' -f 2)
