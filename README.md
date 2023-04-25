@@ -11,8 +11,9 @@ This repo is forked from [chatbot-ui](https://github.com/mckaywrigley/chatbot-ui
 ## Additional Features
 
 - SSO Auth(Google, GitHub)
-- persitent storage
 - ChatGPT compatible plugins
+- Persitent storage(MongoDB)
+- IME support
 
 ![Chatbot UI](./docs/screenshot_2023-04-18.png)
 
