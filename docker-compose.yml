@@ -1,18 +1,26 @@
 version: '3.6'
 
 services:
-  chatgpt:
+  chatui:
     build: .
     ports:
       - 3000:3000
     env_file:
       - .env.local
   mongo:
-    image: mongo
+    image: mongo:5.0
     restart: always
-    ports:
-      - 27017:27017
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongodb-configdb:/data/configdb
+      - mongodb-data:/data/db
+    env_file:
+      # Specify these envs through .env.local
+      # MONGO_INITDB_ROOT_USERNAME: root
+      # MONGO_INITDB_ROOT_PASSWORD: example
+      - .env.local
 
+volumes:
+  mongodb-data:
+    name: chatui-mongodb-data
+  mongodb-configdb:
+    name: chatui-mongodb-configdb
