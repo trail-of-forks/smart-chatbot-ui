@@ -17,6 +17,8 @@ export const Textarea = ({
     HTMLTextAreaElement
   >) => {
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [lastDownKey, setLastDownKey] = useState<string>('');
+  const [endComposing, setEndComposing] = useState<boolean>(false);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -27,12 +29,19 @@ export const Textarea = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // safari support
+      const composing = endComposing;
+      setLastDownKey(e.key);
+      setEndComposing(false);
+      if (e.key === 'Enter' && composing) {
+        return;
+      }
       if (isTyping) {
         return;
       }
       onKeyDown?.call(e, e);
     },
-    [isTyping, onKeyDown],
+    [endComposing, isTyping, onKeyDown],
   );
 
   return (
@@ -40,7 +49,12 @@ export const Textarea = ({
       ref={textareaRef}
       rows={rows}
       onCompositionStart={() => setIsTyping(true)}
-      onCompositionEnd={() => setIsTyping(false)}
+      onCompositionEnd={() => {
+        setIsTyping(false);
+        if (lastDownKey !== 'Enter') {
+          setEndComposing(true);
+        }
+      }}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       {...restProps}

@@ -119,6 +119,8 @@ export const ChatInput = ({
   const [showPluginSelect, setShowPluginSelect] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>(ChatModes.direct);
   const [selectedPlugins, setSelectedPlugins] = useState<Plugin[]>([]);
+  const [lastDownKey, setLastDownKey] = useState<string>('');
+  const [endComposing, setEndComposing] = useState<boolean>(false);
 
   const promptListRef = useRef<HTMLUListElement | null>(null);
 
@@ -197,6 +199,13 @@ export const ChatInput = ({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // safari support
+    const composing = endComposing;
+    setLastDownKey(e.key);
+    setEndComposing(false);
+    if (e.key === 'Enter' && composing) {
+      return;
+    }
     if (showPromptList) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -387,8 +396,15 @@ export const ChatInput = ({
           }
           value={content}
           rows={1}
-          onCompositionStart={() => setIsTyping(true)}
-          onCompositionEnd={() => setIsTyping(false)}
+          onCompositionStart={() => {
+            setIsTyping(true);
+          }}
+          onCompositionEnd={() => {
+            setIsTyping(false);
+            if (lastDownKey !== 'Enter') {
+              setEndComposing(true);
+            }
+          }}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
