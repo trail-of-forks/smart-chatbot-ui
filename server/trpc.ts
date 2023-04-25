@@ -23,4 +23,5 @@ const secure = middleware(async ({ ctx, next }) => {
 
 // Base router and procedure helpers
 export const router = t.router;
+export const publicProcedure = t.procedure;
 export const procedure = t.procedure.use(secure);
