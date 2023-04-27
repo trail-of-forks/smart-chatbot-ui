@@ -10,12 +10,8 @@ import { useCreateReducer } from '@/hooks/useCreateReducer';
 
 import useErrorService from '@/services/errorService';
 import useApiService from '@/services/useApiService';
-import useStorageService from '@/services/useStorageService';
 
-import {
-  cleanConversationHistory,
-  cleanSelectedConversation,
-} from '@/utils/app/clean';
+import { cleanConversationHistory } from '@/utils/app/clean';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { trpc } from '@/utils/trpc';
 
@@ -42,10 +38,11 @@ const Home = ({
 }: Props) => {
   const { t } = useTranslation('chat');
   const { getModels } = useApiService();
-  const storageService = useStorageService();
   const { getModelsError } = useErrorService();
   const settingsQuery = trpc.settings.get.useQuery();
   const promptsQuery = trpc.prompts.list.useQuery();
+  const foldersQuery = trpc.folders.list.useQuery();
+  const conversationsQuery = trpc.conversations.list.useQuery();
 
   const contextValue = useCreateReducer<HomeInitialState>({
     initialState,
@@ -82,7 +79,6 @@ const Home = ({
   // FETCH MODELS ----------------------------------------------
 
   const handleSelectConversation = async (conversation: Conversation) => {
-    await storageService.saveSelectedConversation(conversation);
     dispatch({
       field: 'selectedConversation',
       value: conversation,
@@ -130,6 +126,47 @@ const Home = ({
   }, [dispatch, promptsQuery.data]);
 
   useEffect(() => {
+    if (foldersQuery.data) {
+      dispatch({ field: 'folders', value: foldersQuery.data });
+    }
+  }, [dispatch, foldersQuery.data]);
+
+  useEffect(() => {
+    if (conversationsQuery.data) {
+      let history = conversationsQuery.data;
+      const cleanedConversationHistory: Conversation[] =
+        cleanConversationHistory(history, {
+          temperature: settings.defaultTemperature,
+        });
+      dispatch({ field: 'conversations', value: cleanedConversationHistory });
+
+      const selectedConvesation: Conversation | undefined =
+        cleanedConversationHistory.length > 0
+          ? cleanedConversationHistory[0]
+          : undefined;
+      if (selectedConvesation) {
+        dispatch({
+          field: 'selectedConversation',
+          value: selectedConvesation,
+        });
+      } else {
+        dispatch({
+          field: 'selectedConversation',
+          value: {
+            id: uuidv4(),
+            name: t('New Conversation'),
+            messages: [],
+            model: OpenAIModels[defaultModelId],
+            prompt: DEFAULT_SYSTEM_PROMPT,
+            temperature: settings.defaultTemperature,
+            folderId: null,
+          },
+        });
+      }
+    }
+  }, [dispatch, conversationsQuery.data, settings.defaultTemperature]);
+
+  useEffect(() => {
     const apiKey = localStorage.getItem('apiKey');
 
     if (serverSideApiKeyIsSet) {
@@ -161,46 +198,6 @@ const Home = ({
     const showPromptbar = localStorage.getItem('showPromptbar');
     if (showPromptbar) {
       dispatch({ field: 'showPromptbar', value: showPromptbar === 'true' });
-    }
-
-    storageService.getFolders().then((folders) => {
-      dispatch({ field: 'folders', value: folders });
-    });
-
-    storageService.getConversations().then((conversations) => {
-      const cleanedConversationHistory = cleanConversationHistory(
-        conversations,
-        { temperature: settings.defaultTemperature },
-      );
-      dispatch({ field: 'conversations', value: cleanedConversationHistory });
-    });
-
-    const selectedConversation = localStorage.getItem('selectedConversation');
-    if (selectedConversation) {
-      const parsedSelectedConversation: Conversation =
-        JSON.parse(selectedConversation);
-      const cleanedSelectedConversation = cleanSelectedConversation(
-        settings,
-        parsedSelectedConversation,
-      );
-
-      dispatch({
-        field: 'selectedConversation',
-        value: cleanedSelectedConversation,
-      });
-    } else {
-      dispatch({
-        field: 'selectedConversation',
-        value: {
-          id: uuidv4(),
-          name: t('New Conversation'),
-          messages: [],
-          model: OpenAIModels[defaultModelId],
-          prompt: DEFAULT_SYSTEM_PROMPT,
-          temperature: settings.defaultTemperature,
-          folderId: null,
-        },
-      });
     }
   }, [
     defaultModelId,
