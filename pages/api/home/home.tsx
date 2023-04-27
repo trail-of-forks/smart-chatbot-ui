@@ -8,9 +8,6 @@ import Head from 'next/head';
 
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
-import useErrorService from '@/services/errorService';
-import useApiService from '@/services/useApiService';
-
 import { cleanConversationHistory } from '@/utils/app/clean';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
 import { trpc } from '@/utils/trpc';
@@ -37,8 +34,6 @@ const Home = ({
   defaultModelId,
 }: Props) => {
   const { t } = useTranslation('chat');
-  const { getModels } = useApiService();
-  const { getModelsError } = useErrorService();
   const settingsQuery = trpc.settings.get.useQuery();
   const promptsQuery = trpc.prompts.list.useQuery();
   const foldersQuery = trpc.folders.list.useQuery();
@@ -53,28 +48,18 @@ const Home = ({
     dispatch,
   } = contextValue;
 
-  const { data, error } = useQuery(
-    ['GetModels', apiKey, serverSideApiKeyIsSet],
-    ({ signal }) => {
-      if (!apiKey && !serverSideApiKeyIsSet) return null;
-
-      return getModels(
-        {
-          key: apiKey,
-        },
-        signal,
-      );
-    },
-    { enabled: true, refetchOnWindowFocus: false, refetchOnMount: false },
-  );
+  const modelsQuery = trpc.models.list.useQuery({ key: apiKey });
 
   useEffect(() => {
-    if (data) dispatch({ field: 'models', value: data });
-  }, [data, dispatch]);
+    if (modelsQuery.data)
+      dispatch({ field: 'models', value: modelsQuery.data });
+  }, [modelsQuery.data, dispatch]);
 
   useEffect(() => {
-    dispatch({ field: 'modelError', value: getModelsError(error) });
-  }, [dispatch, error, getModelsError]);
+    if (modelsQuery.error) {
+      dispatch({ field: 'modelError', value: modelsQuery.error });
+    }
+  }, [dispatch, modelsQuery.error]);
 
   // FETCH MODELS ----------------------------------------------
 
