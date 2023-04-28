@@ -5,8 +5,6 @@ import { TaskExecutionContext } from './executor';
 import google from './google';
 import wikipedia from './wikipedia';
 
-import pluginsJson from '@/plugins.json';
-
 interface PluginsJson {
   internals: string[];
   urls: string[];
