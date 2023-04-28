@@ -1,4 +1,3 @@
 {
-  "internals": ["wikipedia_search", "google_search"],
   "urls": ["https://www.klarna.com/.well-known/ai-plugin.json"]
 }
