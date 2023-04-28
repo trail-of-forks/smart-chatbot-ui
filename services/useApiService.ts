@@ -2,39 +2,19 @@ import { useCallback } from 'react';
 
 import { useFetch } from '@/hooks/useFetch';
 
-import { getEndpoint } from '@/utils/app/api';
-
 import {
   PlanningRequest,
   PlanningResponse,
   Plugin,
   PluginResult,
-  ReactAgentResult,
   RunPluginRequest,
 } from '@/types/agent';
 import { ChatBody, Conversation, Message } from '@/types/chat';
-
-export interface GetModelsRequestProps {
-  key: string;
-}
 
 export type PlanningRequestProps = PlanningRequest;
 
 const useApiService = () => {
   const fetchService = useFetch();
-
-  const getModels = useCallback(
-    (params: GetModelsRequestProps, signal?: AbortSignal) => {
-      return fetchService.post<GetModelsRequestProps>(`/api/models`, {
-        body: { key: params.key },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal,
-      });
-    },
-    [fetchService],
-  );
 
   const chat = useCallback(
     (
@@ -109,7 +89,6 @@ const useApiService = () => {
   );
 
   return {
-    getModels,
     chat,
     googleSearch,
     planning,
