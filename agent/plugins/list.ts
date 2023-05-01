@@ -67,7 +67,9 @@ export const listTools = async (): Promise<Plugin[]> => {
     return cache;
   }
 
-  const jsonUrls = (process.env.PLUGINS_JSON_URLS || '').split(',');
+  const jsonUrls = (process.env.PLUGINS_JSON_URLS || '')
+    .split(',')
+    .filter(Boolean);
   const pluginJsons: PluginsJson[] = [];
   for (const jsonUrl of jsonUrls) {
     const response = await fetch(jsonUrl);
