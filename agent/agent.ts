@@ -258,7 +258,7 @@ export const parseResultForNotConversational = (
     }
   }
 
-  const matchThought = result.match(/(.*)\nAction:/);
+  const matchThought = result.match(/Thought:(.*)\nAction:/);
   let thought = '';
   if (matchThought) {
     thought = matchThought[1] || '';
