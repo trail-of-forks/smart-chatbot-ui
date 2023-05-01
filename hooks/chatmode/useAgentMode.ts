@@ -6,6 +6,7 @@ import { useMutation } from 'react-query';
 import useApiService from '@/services/useApiService';
 
 import { watchRefToAbort } from '@/utils/app/api';
+import { createConversationNameFromMessage } from '@/utils/app/conversation';
 import { HomeUpdater } from '@/utils/app/homeUpdater';
 
 import { Answer, PlanningResponse, PluginResult } from '@/types/agent';
@@ -113,9 +114,15 @@ export function useAgentMode(
       }
     },
     onMutate: async (variables) => {
+      let conversation = variables.conversation;
+      if (conversation.messages.length === 1) {
+        conversation.name = createConversationNameFromMessage(
+          variables.message.content,
+        );
+      }
       homeDispatch({
         field: 'selectedConversation',
-        value: variables.conversation,
+        value: conversation,
       });
       homeDispatch({ field: 'loading', value: true });
       homeDispatch({ field: 'messageIsStreaming', value: true });
