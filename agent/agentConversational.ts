@@ -1,0 +1,175 @@
+import { Plugin, PluginResult, ReactAgentResult } from '@/types/agent';
+import { Message } from '@/types/chat';
+
+import {
+  DebugCallbackHandler,
+  createAgentHistory,
+  messagesToOpenAIMessages,
+} from './agentUtil';
+import { TaskExecutionContext } from './plugins/executor';
+import { listToolsBySpecifiedPlugins } from './plugins/list';
+import conversational from './prompts/conversational';
+
+import chalk from 'chalk';
+import { CallbackManager } from 'langchain/callbacks';
+import { PromptTemplate } from 'langchain/prompts';
+import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
+
+export const executeReactAgent = async (
+  context: TaskExecutionContext,
+  enabledToolNames: string[],
+  history: Message[],
+  input: string,
+  toolActionResults: PluginResult[],
+  verbose: boolean = false,
+): Promise<ReactAgentResult> => {
+  const callbackManager = new CallbackManager();
+  if (verbose) {
+    const handler = new DebugCallbackHandler();
+    callbackManager.addHandler(handler);
+  }
+
+  const sytemPrompt: PromptTemplate = PromptTemplate.fromTemplate(
+    conversational.systemPrefix,
+  );
+
+  const formatPrompt: PromptTemplate = PromptTemplate.fromTemplate(
+    conversational.formatPrompt,
+  );
+
+  const userPrompt: PromptTemplate = PromptTemplate.fromTemplate(
+    conversational.toolsPrompt,
+  );
+
+  const toolResponsePrompt: PromptTemplate = PromptTemplate.fromTemplate(
+    conversational.toolResponsePrompt,
+  );
+
+  let agentScratchpad: ChatCompletionRequestMessage[] = [];
+  if (toolActionResults.length > 0) {
+    for (const actionResult of toolActionResults) {
+      let actionResultText = actionResult.result;
+      if (actionResultText.split('\n').length > 5) {
+        actionResultText = `"""\n${actionResultText}\n"""`;
+      }
+      const observation = `
+Action: ${actionResult.action.plugin.nameForModel}
+Action Input: ${actionResult.action.pluginInput}
+Observation: ${actionResultText}
+`;
+      const response = await toolResponsePrompt.format({ observation });
+      agentScratchpad.push({
+        role: 'assistant',
+        content: response,
+      });
+    }
+  }
+
+  const tools = await listToolsBySpecifiedPlugins(context, enabledToolNames);
+  const toolDescriptions = tools
+    .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
+    .join('\n');
+  const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
+
+  const systemContent = await sytemPrompt.format({
+    locale: context.locale,
+  });
+  const formatInstuctions = await formatPrompt.format({
+    tool_names: toolNames,
+  });
+
+  const userContent = await userPrompt.format({
+    input,
+    tools: toolDescriptions,
+    format_instructions: formatInstuctions,
+    agent_scratchpad: agentScratchpad,
+  });
+  const encoding = await context.getEncoding();
+  const modelId = context.model?.id || 'gpt-3.5-turbo';
+  const agentHistory = messagesToOpenAIMessages(
+    createAgentHistory(encoding, modelId, 500, history),
+  );
+  const openai = new OpenAIApi(new Configuration({ apiKey: context.apiKey }));
+  const messages: ChatCompletionRequestMessage[] = [
+    {
+      role: 'system',
+      content: systemContent,
+    },
+    ...agentHistory,
+    {
+      role: 'user',
+      content: userContent,
+    },
+    ...agentScratchpad,
+  ];
+
+  const start = Date.now();
+  if (verbose) {
+    console.log(chalk.greenBright('LLM Request:'));
+    for (const message of messages) {
+      console.log(message.role + ': ' + message.content);
+    }
+  }
+
+  const result = await openai.createChatCompletion({
+    model: context.model?.id || 'gpt-3.5-turbo',
+    messages,
+    temperature: 0.0,
+    stop: ['\nObservation:'],
+  });
+
+  const responseText = result.data.choices[0].message?.content;
+  const ellapsed = Date.now() - start;
+  if (verbose) {
+    console.log(chalk.greenBright('LLM Response:'));
+    console.log(`ellapsed: ${ellapsed / 1000} sec.`);
+    console.log(responseText);
+    console.log('');
+  }
+  const output = parseResultForNotConversational(tools, responseText!);
+  return output;
+};
+
+export const parseResultForNotConversational = (
+  tools: Plugin[],
+  resultText: string,
+): ReactAgentResult => {
+  const regex = /```(\w+)?\s*(?<content>([\s\S]+?))\s*```/gm;
+  const match = regex.exec(resultText);
+  let json = '';
+  if (match) {
+    json = match.groups!.content;
+  } else if (resultText[0] === '{') {
+    json = resultText;
+  }
+
+  let result: { action: string; action_input: string } | null;
+  try {
+    result = JSON.parse(json);
+  } catch (e) {
+    console.log('Error parsing JSON', e);
+    throw new Error('Error parsing JSON');
+  }
+  if (result === null) {
+    throw new Error('Error parsing JSON');
+  }
+
+  if (result.action === 'Final Answer') {
+    return {
+      type: 'answer',
+      answer: result.action_input,
+    };
+  }
+
+  const tool = tools.find((tool) => tool.nameForModel === result!.action);
+  if (!tool) {
+    throw new Error(`Tool ${result.action} not found`);
+  }
+
+  return {
+    type: 'action',
+    plugin: tool,
+    pluginInput: result.action_input,
+    thought: '',
+  };
+};

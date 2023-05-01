@@ -340,7 +340,8 @@ export const ChatInput = ({
         onRegenerate={() => handleRegenerate()}
         onStopConversation={handleStopConversation}
       />
-      {chatMode.id === ChatModeID.AGENT && (
+      {(chatMode.id === ChatModeID.AGENT ||
+        chatMode.id === ChatModeID.CONVERSATIONAL_AGENT) && (
         <ChatInputContainer>
           <ChatPluginList
             selectedPlugins={selectedPlugins}
