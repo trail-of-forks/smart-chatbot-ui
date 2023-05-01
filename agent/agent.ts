@@ -157,16 +157,21 @@ export const executeNotConversationalReactAgent = async (
     callbackManager.addHandler(handler);
   }
 
-  const prompt: PromptTemplate = PromptTemplate.fromTemplate(
-    notConversational.prefix +
+  const sytemPrompt: PromptTemplate = PromptTemplate.fromTemplate(
+    notConversational.systemPrefix +
       '\n\n' +
-      notConversational.prompt +
+      notConversational.systemPrompt +
       '\n\n' +
-      notConversational.suffix,
+      notConversational.systemSuffix,
+  );
+
+  const userPrompt: PromptTemplate = PromptTemplate.fromTemplate(
+    notConversational.userPrompt,
   );
 
   let agentScratchpad = '';
   if (toolActionResults.length > 0) {
+    agentScratchpad += `This was your previous work (but I haven't seen any of it! I only see what you return as final answer):\n`;
     for (const actionResult of toolActionResults) {
       let observation = actionResult.result;
       if (observation.split('\n').length > 5) {
@@ -178,7 +183,7 @@ Action Input: ${actionResult.action.pluginInput}
 Observation: ${observation}\n`;
     }
   }
-  agentScratchpad += 'Thought:';
+  agentScratchpad += '';
 
   const tools = await listToolsBySpecifiedPlugins(context, enabledToolNames);
   const toolDescriptions = tools
@@ -186,10 +191,12 @@ Observation: ${observation}\n`;
     .join('\n');
   const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
 
-  const userContent = await prompt.format({
+  const systemContent = await sytemPrompt.format({
     locale: context.locale,
     tool_descriptions: toolDescriptions,
     tool_names: toolNames,
+  });
+  const userContent = await userPrompt.format({
     input,
     agent_scratchpad: agentScratchpad,
   });
@@ -197,7 +204,7 @@ Observation: ${observation}\n`;
   const messages: ChatCompletionRequestMessage[] = [
     {
       role: 'system',
-      content: `Use the language ${context.locale} for your answer.`,
+      content: systemContent,
     },
     {
       role: 'user',
@@ -216,7 +223,8 @@ Observation: ${observation}\n`;
   const result = await openai.createChatCompletion({
     model: context.model?.id || 'gpt-3.5-turbo',
     messages,
-    temperature: 0,
+    temperature: 0.0,
+    stop: ['\nObservation:'],
   });
 
   const responseText = result.data.choices[0].message?.content;
