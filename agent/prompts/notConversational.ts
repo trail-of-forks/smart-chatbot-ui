@@ -1,5 +1,5 @@
 export const systemPrefix = `Answer the following questions as best you can.
-Use the language {locale} for your final answer.
+Use the language {locale} for your thought and final answer.
 You have access to the following tools:
 
 {tool_descriptions}`;
