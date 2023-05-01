@@ -23,7 +23,7 @@ describe('parseResultForNotConversational', () => {
   ];
 
   it('should parse action result correctly', () => {
-    const result = `Some thought
+    const result = `Thought: Some thought
 Action: tool1
 Action Input: "input"`;
     expect(parseResultForNotConversational(tools, result)).toEqual({
@@ -50,7 +50,7 @@ Action Input: "input"`;
   });
 
   it('should throw an error if tool is not found', () => {
-    const result = `Some thought
+    const result = `Thought: Some thought
 Action: nonExistingTool
 Action Input: 'input'`;
     expect(() => parseResultForNotConversational(tools, result)).toThrow();
