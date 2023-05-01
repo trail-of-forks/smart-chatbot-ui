@@ -45,22 +45,15 @@ export const executeReactAgent = async (
     conversational.toolResponsePrompt,
   );
 
-  let agentScratchpad: ChatCompletionRequestMessage[] = [];
+  let toolResponse: ChatCompletionRequestMessage[] = [];
   if (toolActionResults.length > 0) {
     for (const actionResult of toolActionResults) {
-      let actionResultText = actionResult.result;
-      if (actionResultText.split('\n').length > 5) {
-        actionResultText = `"""\n${actionResultText}\n"""`;
-      }
-      const observation = `
-Action: ${actionResult.action.plugin.nameForModel}
-Action Input: ${actionResult.action.pluginInput}
-Observation: ${actionResultText}
-`;
-      const response = await toolResponsePrompt.format({ observation });
-      agentScratchpad.push({
+      const toolResponseContent = await toolResponsePrompt.format({
+        observation: actionResult.result,
+      });
+      toolResponse.push({
         role: 'assistant',
-        content: response,
+        content: toolResponseContent,
       });
     }
   }
@@ -82,7 +75,7 @@ Observation: ${actionResultText}
     input,
     tools: toolDescriptions,
     format_instructions: formatInstuctions,
-    agent_scratchpad: agentScratchpad,
+    agent_scratchpad: toolResponse,
   });
   const encoding = await context.getEncoding();
   const modelId = context.model?.id || 'gpt-3.5-turbo';
@@ -100,19 +93,19 @@ Observation: ${actionResultText}
       role: 'user',
       content: userContent,
     },
-    ...agentScratchpad,
+    ...toolResponse,
   ];
 
   const start = Date.now();
   if (verbose) {
     console.log(chalk.greenBright('LLM Request:'));
     for (const message of messages) {
-      console.log(message.role + ': ' + message.content);
+      console.log(chalk.blue(message.role + ': ') + message.content);
     }
   }
 
   const result = await openai.createChatCompletion({
-    model: context.model?.id || 'gpt-3.5-turbo',
+    model: modelId,
     messages,
     temperature: 0.0,
     stop: ['\nObservation:'],
@@ -134,13 +127,14 @@ export const parseResultForNotConversational = (
   tools: Plugin[],
   resultText: string,
 ): ReactAgentResult => {
+  const trimmedText = resultText.trim();
   const regex = /```(\w+)?\s*(?<content>([\s\S]+?))\s*```/gm;
-  const match = regex.exec(resultText);
+  const match = regex.exec(trimmedText);
   let json = '';
   if (match) {
     json = match.groups!.content;
-  } else if (resultText[0] === '{') {
-    json = resultText;
+  } else if (trimmedText[0] === '{') {
+    json = trimmedText;
   }
 
   let result: { action: string; action_input: string } | null;
