@@ -63,6 +63,19 @@ const useApiService = () => {
     [fetchService],
   );
 
+  const planningConv = useCallback(
+    (params: PlanningRequestProps, signal?: AbortSignal) => {
+      return fetchService.post<PlanningResponse>(`/api/planningconv`, {
+        body: params,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal,
+      });
+    },
+    [fetchService],
+  );
+
   const runPlugin = useCallback(
     (params: RunPluginRequest, signal?: AbortSignal) => {
       return fetchService.post<PluginResult>(`/api/runplugin`, {
@@ -92,6 +105,7 @@ const useApiService = () => {
     chat,
     googleSearch,
     planning,
+    planningConv,
     runPlugin,
     getPlugins,
   };

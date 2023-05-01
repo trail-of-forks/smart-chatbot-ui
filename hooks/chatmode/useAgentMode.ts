@@ -22,6 +22,7 @@ import useConversations from '../useConversations';
 export function useAgentMode(
   conversations: Conversation[],
   stopConversationRef: MutableRefObject<boolean>,
+  conversational: boolean,
 ): ChatModeRunner {
   const { t } = useTranslation('chat');
   const { t: errT } = useTranslation('error');
@@ -41,21 +42,40 @@ export function useAgentMode(
           // todo: handle this
           return { type: 'answer', answer: t('No Result') };
         }
-        const planningResponse: PlanningResponse = await watchRefToAbort(
-          stopConversationRef,
-          (controller) =>
-            apiService.planning(
-              {
-                taskId,
-                key: params.body.key,
-                model: params.body.model,
-                messages: params.body.messages,
-                pluginResults: toolActionResults,
-                enabledToolNames: params.plugins.map((p) => p.nameForModel),
-              },
-              controller.signal,
-            ),
-        );
+        let planningResponse: PlanningResponse | null = null;
+        if (conversational) {
+          planningResponse = await watchRefToAbort(
+            stopConversationRef,
+            (controller) =>
+              apiService.planningConv(
+                {
+                  taskId,
+                  key: params.body.key,
+                  model: params.body.model,
+                  messages: params.body.messages,
+                  pluginResults: toolActionResults,
+                  enabledToolNames: params.plugins.map((p) => p.nameForModel),
+                },
+                controller.signal,
+              ),
+          );
+        } else {
+          planningResponse = await watchRefToAbort(
+            stopConversationRef,
+            (controller) =>
+              apiService.planning(
+                {
+                  taskId,
+                  key: params.body.key,
+                  model: params.body.model,
+                  messages: params.body.messages,
+                  pluginResults: toolActionResults,
+                  enabledToolNames: params.plugins.map((p) => p.nameForModel),
+                },
+                controller.signal,
+              ),
+          );
+        }
         taskId = planningResponse.taskId;
         const { result } = planningResponse;
         if (result.type === 'action') {

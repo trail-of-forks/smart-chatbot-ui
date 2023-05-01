@@ -1,148 +1,14 @@
 import { Plugin, PluginResult, ReactAgentResult } from '@/types/agent';
 
+import { DebugCallbackHandler, stripQuotes } from './agentUtil';
 import { TaskExecutionContext } from './plugins/executor';
 import { listToolsBySpecifiedPlugins } from './plugins/list';
-import conversational from './prompts/conversational';
 import notConversational from './prompts/notConversational';
 
 import chalk from 'chalk';
-import { CallbackManager, ConsoleCallbackHandler } from 'langchain/callbacks';
-import { LLMChain } from 'langchain/chains';
-import { LLMResult } from 'langchain/dist/schema';
-import { OpenAI } from 'langchain/llms/openai';
+import { CallbackManager } from 'langchain/callbacks';
 import { PromptTemplate } from 'langchain/prompts';
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
-
-const strip = (str: string, c: string) => {
-  const m = str.match(new RegExp(`${c}(.*)${c}`));
-  if (m) {
-    return m[1];
-  }
-  return str;
-};
-
-const stripQuotes = (str: string) => {
-  return strip(strip(str, '"'), "'");
-};
-class _DebugCallbackHandler extends ConsoleCallbackHandler {
-  alwaysVerbose: boolean = true;
-  llmStartTime: number = 0;
-  async handleLLMStart(
-    llm: {
-      name: string;
-    },
-    prompts: string[],
-    runId: string,
-  ): Promise<void> {
-    this.llmStartTime = Date.now();
-    console.log(chalk.greenBright('handleLLMStart ============'));
-    console.log(prompts[0]);
-    console.log('');
-  }
-  async handleLLMEnd(output: LLMResult, runId: string) {
-    const duration = Date.now() - this.llmStartTime;
-    console.log(chalk.greenBright('handleLLMEnd =============='));
-    console.log(`ellapsed: ${duration / 1000} sec.`);
-    console.log(output.generations[0][0].text);
-    console.log('');
-  }
-  async handleText(text: string): Promise<void> {
-    console.log(chalk.greenBright('handleText =========='));
-    console.log(text);
-    console.log('');
-  }
-}
-
-export const executeReactAgent = async (
-  context: TaskExecutionContext,
-  enabledToolNames: string[],
-  input: string,
-  toolActionResults: PluginResult[],
-  verbose: boolean = false,
-): Promise<ReactAgentResult> => {
-  const callbackManager = new CallbackManager();
-  if (verbose) {
-    const handler = new _DebugCallbackHandler();
-    callbackManager.addHandler(handler);
-  }
-
-  const model: OpenAI = new OpenAI({
-    temperature: 0,
-    verbose: true,
-    callbackManager,
-    openAIApiKey: context.apiKey,
-  });
-  const prompt: PromptTemplate = PromptTemplate.fromTemplate(
-    conversational.prefix +
-      '\n\n' +
-      conversational.prompt +
-      '\n\n' +
-      conversational.suffix,
-  );
-  const llmChain: LLMChain = new LLMChain({
-    llm: model,
-    prompt,
-    verbose: true,
-    callbackManager,
-  });
-
-  let agentScratchpad = '';
-  if (toolActionResults.length > 0) {
-    for (const actionResult of toolActionResults) {
-      agentScratchpad += `Thought:${actionResult.action.thought}
-Action:${actionResult.action.plugin}
-Action Input: ${actionResult.action.pluginInput}
-Observation: ${actionResult.result}\n`;
-    }
-  }
-  agentScratchpad += 'Thought:';
-
-  const tools = await listToolsBySpecifiedPlugins(context, enabledToolNames);
-  const toolDescriptions = tools
-    .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
-    .join('\n');
-  const toolNames = tools.map((tool) => tool.nameForModel).join(',');
-  const result = await llmChain.call({
-    tool_descriptions: toolDescriptions,
-    tool_names: toolNames,
-    input,
-    agent_scratchpad: agentScratchpad,
-  });
-  return _parseResult(tools, result.text);
-};
-
-const _parseResult = (tools: Plugin[], result: string): ReactAgentResult => {
-  const matchThought = result.match(/(.*)\nAction:/);
-  let thought = '';
-  if (matchThought) {
-    thought = matchThought[1] || '';
-  }
-  const matchAction = result.match(/Action: (.*)/);
-  if (thought && matchAction) {
-    const actionStr = matchAction[1];
-    const matchActionInput = result.match(/Action Input: (.*)/);
-    const toolInputStr = matchActionInput
-      ? (matchActionInput[1] as string)
-      : '';
-    const toolInput = stripQuotes(toolInputStr.trim());
-    const action = stripQuotes(actionStr.trim());
-    const tool = tools.find((tool) => tool.nameForModel === action);
-    if (!tool) throw new Error('Tool not found: ' + action);
-    return {
-      type: 'action',
-      thought: thought.trim(),
-      plugin: tool,
-      pluginInput: toolInput,
-    };
-  } else {
-    const matchAnswer = result.match(/AI:(.*)/);
-    const answer = matchAnswer ? matchAnswer[1] : '';
-    return {
-      type: 'answer',
-      answer,
-    };
-  }
-};
 
 export const executeNotConversationalReactAgent = async (
   context: TaskExecutionContext,
@@ -153,7 +19,7 @@ export const executeNotConversationalReactAgent = async (
 ): Promise<ReactAgentResult> => {
   const callbackManager = new CallbackManager();
   if (verbose) {
-    const handler = new _DebugCallbackHandler();
+    const handler = new DebugCallbackHandler();
     callbackManager.addHandler(handler);
   }
 
