@@ -1,6 +1,6 @@
 import { Plugin } from '@/types/agent';
 
-import { parseResultForNotConversational } from './agent';
+import { parseResult } from './agent';
 
 import { describe, expect, it } from 'vitest';
 
