@@ -19,6 +19,7 @@ const strip = (str: string, c: string) => {
 export const stripQuotes = (str: string) => {
   return strip(strip(str, '"'), "'");
 };
+
 export class DebugCallbackHandler extends ConsoleCallbackHandler {
   alwaysVerbose: boolean = true;
   llmStartTime: number = 0;

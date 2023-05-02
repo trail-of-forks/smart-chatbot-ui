@@ -20,7 +20,7 @@ Positivity: the positivity of the final answer. the range is 0 - 10
 export const systemSuffix = `Begin! Reminder to always use the exact characters \`Final Answer\` when responding.`;
 
 export const userPrompt = `
-{input}
+Question: {input}
 {agent_scratchpad}`;
 
 // eslint-disable-next-line import/no-anonymous-default-export

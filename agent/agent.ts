@@ -3,7 +3,7 @@ import { Plugin, PluginResult, ReactAgentResult } from '@/types/agent';
 import { DebugCallbackHandler, stripQuotes } from './agentUtil';
 import { TaskExecutionContext } from './plugins/executor';
 import { listToolsBySpecifiedPlugins } from './plugins/list';
-import notConversational from './prompts/notConversational';
+import prompts from './prompts/agent';
 
 import chalk from 'chalk';
 import { CallbackManager } from 'langchain/callbacks';
@@ -14,7 +14,7 @@ export const executeNotConversationalReactAgent = async (
   context: TaskExecutionContext,
   enabledToolNames: string[],
   input: string,
-  toolActionResults: PluginResult[],
+  pluginResults: PluginResult[],
   verbose: boolean = false,
 ): Promise<ReactAgentResult> => {
   const callbackManager = new CallbackManager();
@@ -24,21 +24,21 @@ export const executeNotConversationalReactAgent = async (
   }
 
   const sytemPrompt: PromptTemplate = PromptTemplate.fromTemplate(
-    notConversational.systemPrefix +
+    prompts.systemPrefix +
       '\n\n' +
-      notConversational.systemPrompt +
+      prompts.systemPrompt +
       '\n\n' +
-      notConversational.systemSuffix,
+      prompts.systemSuffix,
   );
 
   const userPrompt: PromptTemplate = PromptTemplate.fromTemplate(
-    notConversational.userPrompt,
+    prompts.userPrompt,
   );
 
   let agentScratchpad = '';
-  if (toolActionResults.length > 0) {
+  if (pluginResults.length > 0) {
     agentScratchpad += `This was your previous work (but I haven't seen any of it! I only see what you return as final answer):\n`;
-    for (const actionResult of toolActionResults) {
+    for (const actionResult of pluginResults) {
       let observation = actionResult.result;
       if (observation.split('\n').length > 5) {
         observation = `"""\n${observation}\n"""`;
@@ -81,8 +81,9 @@ Observation: ${observation}\n`;
   const start = Date.now();
   if (verbose) {
     console.log(chalk.greenBright('LLM Request:'));
-    console.log(messages[0].content);
-    console.log(messages[1].content);
+    for (const message of messages) {
+      console.log(chalk.blue(message.role + ': ') + message.content);
+    }
     console.log('');
   }
 
@@ -101,11 +102,11 @@ Observation: ${observation}\n`;
     console.log(responseText);
     console.log('');
   }
-  const output = parseResultForNotConversational(tools, responseText!);
+  const output = parseResult(tools, responseText!);
   return output;
 };
 
-export const parseResultForNotConversational = (
+export const parseResult = (
   tools: Plugin[],
   result: string,
 ): ReactAgentResult => {

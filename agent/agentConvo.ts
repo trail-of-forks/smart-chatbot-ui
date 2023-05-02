@@ -8,7 +8,7 @@ import {
 } from './agentUtil';
 import { TaskExecutionContext } from './plugins/executor';
 import { listToolsBySpecifiedPlugins } from './plugins/list';
-import conversational from './prompts/conversational';
+import prompts from './prompts/agentConvo';
 
 import chalk from 'chalk';
 import { CallbackManager } from 'langchain/callbacks';
@@ -20,7 +20,7 @@ export const executeReactAgent = async (
   enabledToolNames: string[],
   history: Message[],
   input: string,
-  toolActionResults: PluginResult[],
+  pluginResults: PluginResult[],
   verbose: boolean = false,
 ): Promise<ReactAgentResult> => {
   const callbackManager = new CallbackManager();
@@ -30,24 +30,24 @@ export const executeReactAgent = async (
   }
 
   const sytemPrompt: PromptTemplate = PromptTemplate.fromTemplate(
-    conversational.systemPrefix,
+    prompts.systemPrefix,
   );
 
   const formatPrompt: PromptTemplate = PromptTemplate.fromTemplate(
-    conversational.formatPrompt,
+    prompts.formatPrompt,
   );
 
   const userPrompt: PromptTemplate = PromptTemplate.fromTemplate(
-    conversational.toolsPrompt,
+    prompts.toolsPrompt,
   );
 
   const toolResponsePrompt: PromptTemplate = PromptTemplate.fromTemplate(
-    conversational.toolResponsePrompt,
+    prompts.toolResponsePrompt,
   );
 
   let toolResponse: ChatCompletionRequestMessage[] = [];
-  if (toolActionResults.length > 0) {
-    for (const actionResult of toolActionResults) {
+  if (pluginResults.length > 0) {
+    for (const actionResult of pluginResults) {
       const toolResponseContent = await toolResponsePrompt.format({
         observation: actionResult.result,
       });
@@ -119,11 +119,11 @@ export const executeReactAgent = async (
     console.log(responseText);
     console.log('');
   }
-  const output = parseResultForNotConversational(tools, responseText!);
+  const output = parseResult(tools, responseText!);
   return output;
 };
 
-export const parseResultForNotConversational = (
+export const parseResult = (
   tools: Plugin[],
   resultText: string,
 ): ReactAgentResult => {

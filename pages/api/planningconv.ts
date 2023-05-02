@@ -5,7 +5,7 @@ import { ensureHasValidSession } from '@/utils/server/auth';
 
 import { PlanningRequest, PlanningResponse } from '@/types/agent';
 
-import { executeReactAgent } from '@/agent/agentConversational';
+import { executeReactAgent } from '@/agent/agentConvo';
 import { createContext } from '@/agent/plugins/executor';
 import path from 'node:path';
 import { v4 } from 'uuid';
