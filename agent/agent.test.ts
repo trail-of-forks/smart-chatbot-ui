@@ -26,7 +26,7 @@ describe('parseResultForNotConversational', () => {
     const result = `Thought: Some thought
 Action: tool1
 Action Input: "input"`;
-    expect(parseResultForNotConversational(tools, result)).toEqual({
+    expect(parseResult(tools, result)).toEqual({
       type: 'action',
       thought: 'Some thought',
       plugin: {
@@ -43,7 +43,7 @@ Action Input: "input"`;
 
   it('should parse answer result correctly', () => {
     const result = 'Final Answer: some answer';
-    expect(parseResultForNotConversational(tools, result)).toEqual({
+    expect(parseResult(tools, result)).toEqual({
       type: 'answer',
       answer: 'some answer',
     });
@@ -53,14 +53,14 @@ Action Input: "input"`;
     const result = `Thought: Some thought
 Action: nonExistingTool
 Action Input: 'input'`;
-    expect(() => parseResultForNotConversational(tools, result)).toThrow();
+    expect(() => parseResult(tools, result)).toThrow();
   });
   it('should return an answer even if tool is not found', () => {
     const result = `Some thought
 Action: nonExistingTool
 Action Input: 'input'
 Final Answer: some answer`;
-    expect(parseResultForNotConversational(tools, result)).toEqual({
+    expect(parseResult(tools, result)).toEqual({
       type: 'answer',
       answer: 'some answer',
     });
