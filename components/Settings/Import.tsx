@@ -5,6 +5,7 @@ import { useTranslation } from 'next-i18next';
 
 import { SupportedExportFormats } from '@/types/export';
 
+import { Dialog } from '../Dialog/Dialog';
 import { SidebarButton } from '../Sidebar/SidebarButton';
 
 interface Props {
@@ -21,7 +22,12 @@ const isValidFile = (json: any): string[] => {
 
   const { version, history, folders, prompts } = json;
 
-  if (typeof version !== 'number' || !Array.isArray(history) || !Array.isArray(folders) || !Array.isArray(prompts)) {
+  if (
+    typeof version !== 'number' ||
+    !Array.isArray(history) ||
+    !Array.isArray(folders) ||
+    !Array.isArray(prompts)
+  ) {
     errors.push('Invalid file structure');
     return errors;
   }
@@ -99,8 +105,8 @@ export const Import: FC<Props> = ({ onImport }) => {
         }}
       />
 
-      {/* Display the error messages */}
-      {errors.length > 0 && (
+      <Dialog open={errors.length > 0} onClose={() => setErrors([])}>
+        <h2 className="text-red-400 text-lg mb-4">{t('error')}</h2>
         <div className="error-messages">
           {errors.map((error, index) => (
             <p key={index} className="error-message">
@@ -108,7 +114,7 @@ export const Import: FC<Props> = ({ onImport }) => {
             </p>
           ))}
         </div>
-      )}
+      </Dialog>
     </>
   );
 };
