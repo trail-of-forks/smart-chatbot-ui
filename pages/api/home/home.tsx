@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useQuery } from 'react-query';
 
 import { GetServerSideProps } from 'next';
 import { useTranslation } from 'next-i18next';
@@ -37,7 +36,9 @@ const Home = ({
   const settingsQuery = trpc.settings.get.useQuery();
   const promptsQuery = trpc.prompts.list.useQuery();
   const foldersQuery = trpc.folders.list.useQuery();
-  const conversationsQuery = trpc.conversations.list.useQuery();
+  const conversationsQuery = trpc.conversations.list.useQuery(undefined, {
+    enabled: false,
+  });
 
   const stopConversationRef = useRef<boolean>(false);
   const contextValue = useCreateReducer<HomeInitialState>({
@@ -80,7 +81,7 @@ const Home = ({
     if (window.innerWidth < 640) {
       dispatch({ field: 'showChatbar', value: false });
     }
-  }, [selectedConversation]);
+  }, [dispatch, selectedConversation]);
 
   useEffect(() => {
     defaultModelId &&
@@ -103,6 +104,10 @@ const Home = ({
   ]);
 
   // ON LOAD --------------------------------------------
+
+  useEffect(() => {
+    conversationsQuery.refetch();
+  }, [conversationsQuery]);
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -134,16 +139,18 @@ const Home = ({
         });
       dispatch({ field: 'conversations', value: cleanedConversationHistory });
 
-      const selectedConvesation: Conversation | undefined =
+      const conversation: Conversation | undefined =
         cleanedConversationHistory.length > 0
           ? cleanedConversationHistory[0]
           : undefined;
-      if (selectedConvesation) {
+      if (conversation) {
+        console.log('conversations found', conversation);
         dispatch({
           field: 'selectedConversation',
-          value: selectedConvesation,
+          value: conversation,
         });
       } else {
+        console.log('no conversations found, creating new one');
         dispatch({
           field: 'selectedConversation',
           value: {
@@ -158,7 +165,13 @@ const Home = ({
         });
       }
     }
-  }, [dispatch, conversationsQuery.data, settings.defaultTemperature]);
+  }, [
+    dispatch,
+    conversationsQuery.data,
+    settings.defaultTemperature,
+    t,
+    defaultModelId,
+  ]);
 
   useEffect(() => {
     const apiKey = localStorage.getItem('apiKey');
