@@ -160,10 +160,15 @@ export const parseResult = (
     throw new Error(`Tool ${result.action} not found`);
   }
 
+  let pluginInput = result.action_input;
+  if (typeof pluginInput === 'object') {
+    pluginInput = JSON.stringify(pluginInput);
+  }
+
   return {
     type: 'action',
     plugin: tool,
-    pluginInput: result.action_input,
+    pluginInput,
     thought: '',
   };
 };
