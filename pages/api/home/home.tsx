@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery } from 'react-query';
 
 import { GetServerSideProps } from 'next';
@@ -39,8 +39,12 @@ const Home = ({
   const foldersQuery = trpc.folders.list.useQuery();
   const conversationsQuery = trpc.conversations.list.useQuery();
 
+  const stopConversationRef = useRef<boolean>(false);
   const contextValue = useCreateReducer<HomeInitialState>({
-    initialState,
+    initialState: {
+      ...initialState,
+      stopConversationRef: stopConversationRef,
+    } as HomeInitialState,
   });
 
   const {
@@ -91,7 +95,12 @@ const Home = ({
         field: 'serverSidePluginKeysSet',
         value: serverSidePluginKeysSet,
       });
-  }, [defaultModelId, serverSideApiKeyIsSet, serverSidePluginKeysSet]);
+  }, [
+    defaultModelId,
+    dispatch,
+    serverSideApiKeyIsSet,
+    serverSidePluginKeysSet,
+  ]);
 
   // ON LOAD --------------------------------------------
 
