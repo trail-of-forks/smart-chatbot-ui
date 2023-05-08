@@ -158,6 +158,8 @@ You can control the tools you want to use with the environment variable `PLUGINS
 
 #### Python Interpreter
 
+_Recommended for use with GPT-4_
+
 To enable python interpreter, you need to specify codeapi endpoint to `PYTHON_INTERPRETER_BACKEND` in `.env.local` and add `python_interpreter` to PLUGINS_INTERNAL.
 
 ```bash
