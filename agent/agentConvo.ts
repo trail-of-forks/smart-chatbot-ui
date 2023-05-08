@@ -92,12 +92,40 @@ const createFormattedPrompts = async (
   return { systemContent, userContent };
 };
 
-const createMessages = (
-  systemContent: string,
-  agentHistory: ChatCompletionRequestMessage[],
-  userContent: string,
-  toolResponse: ChatCompletionRequestMessage[],
-): ChatCompletionRequestMessage[] => {
+const createMessages = async (
+  context: TaskExecutionContext,
+  tools: Plugin[],
+  pluginResults: PluginResult[],
+  history: Message[],
+  modelId: string,
+  input: string,
+): Promise<ChatCompletionRequestMessage[]> => {
+  const { sytemPrompt, formatPrompt, userPrompt, toolResponsePrompt } =
+    createPrompts();
+  const toolResponse = await createToolResponse(
+    pluginResults,
+    toolResponsePrompt,
+  );
+  const toolDescriptions = tools
+    .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
+    .join('\n');
+  const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
+  const { systemContent, userContent } = await createFormattedPrompts(
+    sytemPrompt,
+    context,
+    formatPrompt,
+    toolNames,
+    userPrompt,
+    input,
+    toolDescriptions,
+    toolResponse,
+  );
+
+  const encoding = await context.getEncoding();
+  const agentHistory = messagesToOpenAIMessages(
+    createAgentHistory(encoding, modelId, 500, history),
+  );
+
   return [
     {
       role: 'system',
@@ -138,40 +166,16 @@ export const executeReactAgent = async (
   verbose: boolean = false,
 ): Promise<ReactAgentResult> => {
   setupCallbackManager(verbose);
-  const { sytemPrompt, formatPrompt, userPrompt, toolResponsePrompt } =
-    createPrompts();
-  let toolResponse = await createToolResponse(
-    pluginResults,
-    toolResponsePrompt,
-  );
-
   const tools = await listToolsBySpecifiedPlugins(context, enabledToolNames);
-  const toolDescriptions = tools
-    .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
-    .join('\n');
-  const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
-
-  const { systemContent, userContent } = await createFormattedPrompts(
-    sytemPrompt,
-    context,
-    formatPrompt,
-    toolNames,
-    userPrompt,
-    input,
-    toolDescriptions,
-    toolResponse,
-  );
-  const encoding = await context.getEncoding();
   const modelId = context.model?.id || 'gpt-3.5-turbo';
-  const agentHistory = messagesToOpenAIMessages(
-    createAgentHistory(encoding, modelId, 500, history),
-  );
   const openai = new OpenAIApi(new Configuration({ apiKey: context.apiKey }));
-  const messages = createMessages(
-    systemContent,
-    agentHistory,
-    userContent,
-    toolResponse,
+  const messages = await createMessages(
+    context,
+    tools,
+    pluginResults,
+    history,
+    modelId,
+    input,
   );
 
   const start = Date.now();
