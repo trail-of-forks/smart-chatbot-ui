@@ -165,11 +165,15 @@ export const parseResult = (
   tools: Plugin[],
   result: string,
 ): ReactAgentResult => {
-  const matchAnswer = result.match(/Final Answer:(.*)/);
-  const answer = matchAnswer ? matchAnswer[1] : '';
+  const matchAnswer = result.match(/Final Answer:([\s\S]*)/);
+  let answer = matchAnswer ? matchAnswer[1].trim() : '';
+  answer =
+    answer.indexOf('Positivity:') !== -1
+      ? answer.slice(0, answer.indexOf('Positivity:')).trim()
+      : answer;
   const answerResult: ReactAgentResult = {
     type: 'answer',
-    answer: answer.trim(),
+    answer: answer,
   };
 
   // if the positivity is high enough, return the answer
@@ -180,10 +184,10 @@ export const parseResult = (
     }
   }
 
-  const matchThought = result.match(/Thought:(.*)\nAction:/);
+  const matchThought = result.match(/Thought:(.*)(\n|$)/);
   let thought = '';
   if (matchThought) {
-    thought = matchThought[1] || '';
+    thought = matchThought[1].trim() || '';
   }
   const matchAction = result.match(/Action:(.*)(\n|$)/);
   let action = '';
