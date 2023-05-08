@@ -76,10 +76,28 @@ const createFormattedPrompts = async (
   return { systemContent, userContent };
 };
 
-const createMessages = (
-  systemContent: string,
-  userContent: string,
-): ChatCompletionRequestMessage[] => {
+const createMessages = async (
+  context: TaskExecutionContext,
+  tools: Plugin[],
+  pluginResults: PluginResult[],
+  input: string
+): Promise<ChatCompletionRequestMessage[]> => {
+  const { sytemPrompt, userPrompt } = createPrompts();
+  const agentScratchpad = createAgentScratchpad(pluginResults);
+  const toolDescriptions = tools
+    .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
+    .join('\n');
+  const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
+  const { systemContent, userContent } = await createFormattedPrompts(
+    sytemPrompt,
+    context,
+    toolDescriptions,
+    toolNames,
+    userPrompt,
+    input,
+    agentScratchpad,
+  );
+
   return [
     {
       role: 'system',
@@ -118,24 +136,9 @@ export const executeNotConversationalReactAgent = async (
   verbose: boolean = false,
 ): Promise<ReactAgentResult> => {
   setupCallbackManager(verbose);
-  const { sytemPrompt, userPrompt } = createPrompts();
-  let agentScratchpad = createAgentScratchpad(pluginResults);
   const tools = await listToolsBySpecifiedPlugins(context, enabledToolNames);
-  const toolDescriptions = tools
-    .map((tool) => tool.nameForModel + ': ' + tool.descriptionForModel)
-    .join('\n');
-  const toolNames = tools.map((tool) => tool.nameForModel).join(', ');
-  const { systemContent, userContent } = await createFormattedPrompts(
-    sytemPrompt,
-    context,
-    toolDescriptions,
-    toolNames,
-    userPrompt,
-    input,
-    agentScratchpad,
-  );
   const openai = new OpenAIApi(new Configuration({ apiKey: context.apiKey }));
-  const messages = createMessages(systemContent, userContent);
+  const messages = await createMessages(context, tools, pluginResults, input);
 
   const start = Date.now();
   if (verbose) {
