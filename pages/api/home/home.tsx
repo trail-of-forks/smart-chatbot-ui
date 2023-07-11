@@ -49,7 +49,7 @@ const Home = ({
   });
 
   const {
-    state: { apiKey, settings, conversations, selectedConversation, prompts },
+    state: { apiKey, settings, conversations, selectedConversation, prompts, models },
     dispatch,
   } = contextValue;
 
@@ -157,7 +157,7 @@ const Home = ({
             id: uuidv4(),
             name: t('New Conversation'),
             messages: [],
-            model: OpenAIModels[defaultModelId],
+            model: models.find(m=>m.id == defaultModelId),
             prompt: DEFAULT_SYSTEM_PROMPT,
             temperature: settings.defaultTemperature,
             folderId: null,
@@ -171,6 +171,7 @@ const Home = ({
     settings.defaultTemperature,
     t,
     defaultModelId,
+    models
   ]);
 
   useEffect(() => {
