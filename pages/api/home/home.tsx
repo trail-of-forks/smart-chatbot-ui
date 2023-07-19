@@ -143,14 +143,12 @@ const Home = ({
         cleanedConversationHistory.length > 0
           ? cleanedConversationHistory[0]
           : undefined;
-      if (conversation) {
-        console.log('conversations found', conversation);
+      if (conversation && !selectedConversation) {
         dispatch({
           field: 'selectedConversation',
           value: conversation,
         });
-      } else {
-        console.log('no conversations found, creating new one');
+      } else if (!conversation) {
         dispatch({
           field: 'selectedConversation',
           value: {
