@@ -143,7 +143,7 @@ export const Chatbar = () => {
     if (updatedConversations.length > 0) {
       homeDispatch({
         field: 'selectedConversation',
-        value: updatedConversations[updatedConversations.length - 1],
+        value: updatedConversations[0],
       });
     } else {
       defaultModelId &&
