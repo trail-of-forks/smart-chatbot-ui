@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 import { OpenAIError } from '@/utils/server';
-import { ensureHasValidSession } from '@/utils/server/auth';
+import { ensureHasValidSession, getUserHash } from '@/utils/server/auth';
 
 import { PlanningRequest, PlanningResponse } from '@/types/agent';
 
@@ -9,6 +9,7 @@ import { executeReactAgent } from '@/agent/agentConvo';
 import { createContext } from '@/agent/plugins/executor';
 import path from 'node:path';
 import { v4 } from 'uuid';
+import { verifyUserLlmUsage } from '@/utils/server/llmUsage';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Vercel Hack
@@ -19,6 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!(await ensureHasValidSession(req, res))) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  const userId = await getUserHash(req, res);
 
   try {
     const {
@@ -27,7 +29,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       enabledToolNames,
       pluginResults: toolActionResults,
     } = req.body as PlanningRequest;
-
+    try {
+      await verifyUserLlmUsage(userId, model.id);
+    } catch (e: any) {
+      return res.status(429).json({ error: e.message });
+    }
+    
     let { taskId } = req.body;
     if (!taskId) {
       taskId = v4();
@@ -35,7 +42,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const lastMessage = messages[messages.length - 1];
     const verbose = process.env.DEBUG_AGENT_LLM_LOGGING === 'true';
-    const context = createContext(taskId, req, model, verbose);
+    const context = await createContext(taskId, req, res, model, verbose);
     const result = await executeReactAgent(
       context,
       enabledToolNames,
