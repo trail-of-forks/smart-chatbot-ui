@@ -15,3 +15,5 @@ export const OPENAI_ORGANIZATION = process.env.OPENAI_ORGANIZATION || '';
 export const AZURE_DEPLOYMENT_ID_EMBEDDINGS = process.env.AZURE_DEPLOYMENT_ID_EMBEDDINGS || '';
 
 export const MONGODB_DB = process.env.MONGODB_DB || '';
+
+export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || '';

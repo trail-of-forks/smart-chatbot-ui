@@ -2,10 +2,11 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { OpenAIStream } from '@/utils/server';
+import { OpenAIError, OpenAIStream } from '@/utils/server';
 import { ensureHasValidSession } from '@/utils/server/auth';
 import { createMessagesToSend } from '@/utils/server/message';
 import { getTiktokenEncoding } from '@/utils/server/tiktoken';
+import { getErrorResponseBody } from '@/utils/server/error';
 
 import { ChatBodySchema } from '@/types/chat';
 
@@ -82,11 +83,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   } catch (error) {
     console.error(error);
-    if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'Error' });
-    }
+    const errorRes = getErrorResponseBody(error);
+    res.status(500).json(errorRes);
   } finally {
     encoding.free();
   }

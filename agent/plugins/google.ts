@@ -15,6 +15,7 @@ import { TaskExecutionContext } from './executor';
 import chalk from 'chalk';
 import endent from 'endent';
 import { getOpenAIApi } from '@/utils/server/openai';
+import { OpenAIError } from '@/utils/server';
 
 export default {
   nameForModel: 'google_search',
@@ -127,19 +128,27 @@ export default {
     const answerMessage: Message = { role: 'user', content: answerPrompt };
     const model = context.model;
     const openai = getOpenAIApi(model.azureDeploymentId)
-    const answerRes = await openai.createChatCompletion({
-      model: model.id,
-      messages: [
-        {
-          role: 'system',
-          content: `Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as [1](link), etc, as you use them. Maximum 4 sentences.`,
-        },
-        answerMessage,
-      ],
-      max_tokens: 1000,
-      temperature: 0,
-      stream: false,
-    })
+    let answerRes;
+    try {
+      answerRes = await openai.createChatCompletion({
+        model: model.id,
+        messages: [
+          {
+            role: 'system',
+            content: `Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as [1](link), etc, as you use them. Maximum 4 sentences.`,
+          },
+          answerMessage,
+        ],
+        max_tokens: 1000,
+        temperature: 0,
+        stream: false,
+      })
+    } catch (error: any) {
+      if (error.response) {
+        const { message, type, param, code } = error.response.data.error;
+        throw new OpenAIError(message, type, param, code)
+      } else throw error
+    }
 
     const answer = answerRes.data.choices[0].message!.content!;
     encoding.free();
