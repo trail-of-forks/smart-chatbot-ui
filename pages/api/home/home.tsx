@@ -8,7 +8,7 @@ import Head from 'next/head';
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
 import { cleanConversationHistory } from '@/utils/app/clean';
-import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
+import { DEFAULT_SYSTEM_PROMPT, OPENAI_API_TYPE } from '@/utils/app/const';
 import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
@@ -25,12 +25,14 @@ interface Props {
   serverSideApiKeyIsSet: boolean;
   serverSidePluginKeysSet: boolean;
   defaultModelId: OpenAIModelID;
+  isAzureOpenAI: boolean;
 }
 
 const Home = ({
   serverSideApiKeyIsSet,
   serverSidePluginKeysSet,
   defaultModelId,
+  isAzureOpenAI
 }: Props) => {
   const { t } = useTranslation('chat');
   const settingsQuery = trpc.settings.get.useQuery();
@@ -45,6 +47,7 @@ const Home = ({
     initialState: {
       ...initialState,
       stopConversationRef: stopConversationRef,
+      isAzureOpenAI
     } as HomeInitialState,
   });
 
@@ -258,6 +261,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
     props: {
       serverSideApiKeyIsSet: !!process.env.OPENAI_API_KEY,
       defaultModelId,
+      isAzureOpenAI: OPENAI_API_TYPE === "azure",
       serverSidePluginKeysSet,
       ...(await serverSideTranslations(locale ?? 'en', [
         'common',
