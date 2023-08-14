@@ -1,11 +1,15 @@
 import NextAuth, { NextAuthOptions, PagesOptions } from 'next-auth';
+import AzureADProvider from 'next-auth/providers/azure-ad';
 import CognitoProvider from 'next-auth/providers/cognito';
 import Credentials from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
-import AzureADProvider from "next-auth/providers/azure-ad";
 
 import { getUserHashFromMail } from '@/utils/server/auth';
+
+import loggerFn from 'pino';
+
+const logger = loggerFn({ name: 'auth' });
 
 const providers = [];
 if (process.env.NEXTAUTH_ENABLED === 'false') {
@@ -56,8 +60,8 @@ if (process.env.AZURE_AD_CLIENT_ID) {
       clientId: process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
       tenantId: process.env.AZURE_AD_TENANT_ID,
-    })
-  )
+    }),
+  );
 }
 
 let pages: Partial<PagesOptions> = {};
@@ -68,7 +72,17 @@ if (process.env.NEXTAUTH_ENABLED === 'false') {
 
 export const authOptions: NextAuthOptions = {
   providers: providers,
-  session: { strategy: 'jwt' },
+  session: {
+    strategy: 'jwt',
+    maxAge: parseInt(process.env.NEXTAUTH_SESSION_MAX_AGE || '86400'),
+  },
+  events: {
+    async signIn(message) {
+      if (process.env.AUDIT_LOG_ENABLED === 'true') {
+        logger.info({ event: 'signIn', user: message.user });
+      }
+    },
+  },
   pages,
 };
 
