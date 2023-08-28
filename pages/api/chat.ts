@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import { OpenAIError, OpenAIStream } from '@/utils/server';
+import { OpenAIStream } from '@/utils/server';
 import { ensureHasValidSession } from '@/utils/server/auth';
 import { createMessagesToSend } from '@/utils/server/message';
 import { getTiktokenEncoding } from '@/utils/server/tiktoken';
