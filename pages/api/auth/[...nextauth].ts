@@ -1,10 +1,11 @@
-import NextAuth, { NextAuthOptions, PagesOptions } from 'next-auth';
+import NextAuth, { CallbacksOptions, NextAuthOptions, PagesOptions, Session } from 'next-auth';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import CognitoProvider from 'next-auth/providers/cognito';
 import Credentials from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
-
+import { UserInfoDb, getDb } from '@/utils/server/storage';
+import { User, UserRole } from '@/types/user';
 import { getUserHashFromMail } from '@/utils/server/auth';
 
 import loggerFn from 'pino';
@@ -70,6 +71,17 @@ if (process.env.NEXTAUTH_ENABLED === 'false') {
   pages['signIn'] = '/auth/autologin';
 }
 
+const callbacks: Partial<CallbacksOptions> = {
+  async signIn({ user, account, profile, email, credentials }) {
+    await updateOrCreateUser(user.email!, user.name || "");
+    return true
+  },
+  async session({ session, token, user }) {
+    session.user = await getUser(session);
+    return session
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: providers,
   session: {
@@ -84,6 +96,41 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages,
+  callbacks: callbacks
 };
+
+async function getUserDb() {
+  return new UserInfoDb(await getDb());
+}
+
+async function getUser(session: Session): Promise<User> {
+  if (!session.user?.email) throw new Error("Unauthorized");
+  const userId = getUserHashFromMail(session.user.email);
+  return (await (await getUserDb()).getUser(userId))!;
+}
+
+async function updateOrCreateUser(email: string, name?: string): Promise<User> {
+  const userInfoDb = await getUserDb();
+  const userId = getUserHashFromMail(email);
+  const currentUser = await userInfoDb.getUser(userId);
+  let updatedUser: User;
+  if (!currentUser) {
+    updatedUser = {
+      _id: userId,
+      email: email,
+      name: name,
+      role: UserRole.USER
+    }
+    await userInfoDb.addUser(updatedUser);
+  }
+  else {
+    updatedUser = {
+      ...currentUser,
+      name: name
+    };
+    await userInfoDb.saveUser(updatedUser);
+  }
+  return updatedUser;
+}
 
 export default NextAuth(authOptions);
