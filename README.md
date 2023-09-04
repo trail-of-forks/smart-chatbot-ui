@@ -144,6 +144,8 @@ When deploying the application, the following environment variables can be set:
 | AZURE_AD_TENANT_ID                |                                | Azure AD Directory (tenant) ID                                                                                                            |
 | AZURE_AD_CLIENT_SECRET            |                                | Azure AD Client secret value (Certificates & secrets > Client Secrets > New Client Secret > Value)                                        |
 | SUPPORT_EMAIL                     |                                | Specify the support email address to show users in case of errors or issues are encountered while using the application.                  |
+| PROMPT_SHARING_ENABLED            | `false`                        | Enable prompt sharing between users. Only admin users are allowed to modify public folders. Add admins by setting db collection field `users.role` to `admin` for each individual user.   |
+
 
 If you do not provide an OpenAI API key with `OPENAI_API_KEY`, users will have to provide their own key.
 If you don't have an OpenAI API key, you can get one [here](https://platform.openai.com/account/api-keys).

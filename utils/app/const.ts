@@ -17,3 +17,5 @@ export const AZURE_DEPLOYMENT_ID_EMBEDDINGS = process.env.AZURE_DEPLOYMENT_ID_EM
 export const MONGODB_DB = process.env.MONGODB_DB || '';
 
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || '';
+
+export const PROMPT_SHARING_ENABLED: boolean = process.env.PROMPT_SHARING_ENABLED === "true" || false;

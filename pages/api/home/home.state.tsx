@@ -16,10 +16,12 @@ export interface HomeInitialState {
   modelError: Error | null;
   models: OpenAIModel[];
   folders: FolderInterface[];
+  publicFolders: FolderInterface[];
   conversations: Conversation[];
   selectedConversation: Conversation | undefined;
   currentMessage: Message | undefined;
   prompts: Prompt[];
+  publicPrompts: Prompt[];
   showChatbar: boolean;
   showPromptbar: boolean;
   currentFolder: FolderInterface | undefined;
@@ -30,6 +32,7 @@ export interface HomeInitialState {
   serverSidePluginKeysSet: boolean;
   stopConversationRef: MutableRefObject<boolean>;
   supportEmail: string;
+  promptSharingEnabled: boolean;
 }
 
 export const initialState: Partial<HomeInitialState> = {
@@ -45,10 +48,12 @@ export const initialState: Partial<HomeInitialState> = {
   modelError: null,
   models: [],
   folders: [],
+  publicFolders: [],
   conversations: [],
   selectedConversation: undefined,
   currentMessage: undefined,
   prompts: [],
+  publicPrompts: [],
   showPromptbar: true,
   showChatbar: true,
   currentFolder: undefined,
@@ -58,4 +63,5 @@ export const initialState: Partial<HomeInitialState> = {
   serverSideApiKeyIsSet: false,
   serverSidePluginKeysSet: false,
   supportEmail: '',
+  promptSharingEnabled: false,
 };
