@@ -1,6 +1,5 @@
 import { OPENAI_API_HOST } from '@/utils/app/const';
 import {
-  chunkTextByTokenSize,
   extractTextFromHtml,
   getSimilarChunks as getChunksSortedBySimilarity,
   sliceByTokenSize,
@@ -15,6 +14,7 @@ import { TaskExecutionContext } from './executor';
 import chalk from 'chalk';
 import endent from 'endent';
 import { getOpenAIApi } from '@/utils/server/openai';
+import { saveLlmUsage } from '@/utils/server/llmUsage';
 
 export default {
   nameForModel: 'google_search',
@@ -65,7 +65,8 @@ export default {
             encoding,
             query,
             text,
-            500
+            500,
+            context
           );
           if (sortedChunks.length === 0) {
             return null;
@@ -141,8 +142,15 @@ export default {
       stream: false,
     })
 
-    const answer = answerRes.data.choices[0].message!.content!;
+    const { choices, usage } = answerRes.data;
+    const answer = choices[0].message!.content!;
     encoding.free();
+
+    await saveLlmUsage(context.userId, context.model.id, "agentPlugin", {
+      prompt: usage?.prompt_tokens ?? 0,
+      completion: usage?.completion_tokens ?? 0,
+      total: usage?.total_tokens ?? 0
+    })
 
     if (context.verbose) {
       console.log(chalk.greenBright('LLM END(google plugin)'));
