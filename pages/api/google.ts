@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-import { ensureHasValidSession } from '@/utils/server/auth';
+import { ensureHasValidSession, getUserHash } from '@/utils/server/auth';
 import { getTiktokenEncoding } from '@/utils/server/tiktoken';
 import { cleanSourceText } from '@/utils/server/webpage';
 
@@ -15,6 +15,7 @@ import path from 'node:path';
 import { getOpenAIApi } from '@/utils/server/openai';
 import { OpenAIError } from '@/utils/server';
 import { getErrorResponseBody } from '@/utils/server/error';
+import { saveLlmUsage, verifyUserLlmUsage } from '@/utils/server/llmUsage';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
   // Vercel Hack
@@ -26,10 +27,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  const userId = await getUserHash(req, res);
+
   let encoding: Tiktoken | null = null;
   try {
     const { messages, key, model, googleAPIKey, googleCSEId } =
       req.body as GoogleBody;
+    try {
+      await verifyUserLlmUsage(userId, model.id);
+    } catch (e: any) {
+      return res.status(429).json({ error: e.message });
+    }
 
     encoding = await getTiktokenEncoding(model.id);
 
@@ -37,10 +45,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     const query = encodeURIComponent(userMessage.content.trim());
 
     const googleRes = await fetch(
-      `https://customsearch.googleapis.com/customsearch/v1?key=${
-        googleAPIKey ? googleAPIKey : process.env.GOOGLE_API_KEY
-      }&cx=${
-        googleCSEId ? googleCSEId : process.env.GOOGLE_CSE_ID
+      `https://customsearch.googleapis.com/customsearch/v1?key=${googleAPIKey ? googleAPIKey : process.env.GOOGLE_API_KEY
+      }&cx=${googleCSEId ? googleCSEId : process.env.GOOGLE_CSE_ID
       }&q=${query}&num=5`,
     );
 
@@ -166,8 +172,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       } else throw error
     }
 
-    const { choices: choices2 } = await answerRes.data;
+    const { choices: choices2, usage } = await answerRes.data;
     const answer = choices2[0].message!.content;
+
+    await saveLlmUsage(userId, model.id, "google", {
+      prompt: usage?.prompt_tokens ?? 0,
+      completion: usage?.completion_tokens ?? 0,
+      total: usage?.total_tokens ?? 0
+    })
 
     res.status(200).json({ answer });
   } catch (error) {
