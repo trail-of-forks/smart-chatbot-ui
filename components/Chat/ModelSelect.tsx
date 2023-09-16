@@ -5,7 +5,7 @@ import { useTranslation } from 'next-i18next';
 
 import useConversations from '@/hooks/useConversations';
 
-import { OpenAIModel } from '@/types/openai';
+import { OpenAIModel, OpenAIModelType } from '@/types/openai';
 
 import HomeContext from '@/pages/api/home/home.context';
 
@@ -39,7 +39,7 @@ export const ModelSelect = () => {
           value={selectedConversation?.model?.id || defaultModelId}
           onChange={handleChange}
         >
-          {models.map((model) => (
+          {models.filter(m => m.type === OpenAIModelType.CHAT).map((model) => (
             <option
               key={model.id}
               value={model.id}
