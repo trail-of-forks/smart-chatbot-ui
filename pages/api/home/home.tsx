@@ -8,7 +8,7 @@ import Head from 'next/head';
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
 import { cleanConversationHistory } from '@/utils/app/clean';
-import { DEFAULT_SYSTEM_PROMPT, PROMPT_SHARING_ENABLED } from '@/utils/app/const';
+import { DEFAULT_SYSTEM_PROMPT, SUPPORT_EMAIL, PROMPT_SHARING_ENABLED } from '@/utils/app/const';
 import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
@@ -25,14 +25,16 @@ interface Props {
   serverSideApiKeyIsSet: boolean;
   serverSidePluginKeysSet: boolean;
   defaultModelId: OpenAIModelID;
-  promptSharingEnabled: boolean
+  supportEmail: string,
+  promptSharingEnabled: boolean,
 }
 
 const Home = ({
   serverSideApiKeyIsSet,
   serverSidePluginKeysSet,
   defaultModelId,
-  promptSharingEnabled
+  supportEmail,
+  promptSharingEnabled,
 }: Props) => {
   const { t } = useTranslation('chat');
   const settingsQuery = trpc.settings.get.useQuery();
@@ -49,7 +51,8 @@ const Home = ({
     initialState: {
       ...initialState,
       stopConversationRef: stopConversationRef,
-      promptSharingEnabled: promptSharingEnabled
+      supportEmail,
+      promptSharingEnabled: promptSharingEnabled,
     } as HomeInitialState,
   });
 
@@ -276,6 +279,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
       serverSideApiKeyIsSet: !!process.env.OPENAI_API_KEY,
       defaultModelId,
       serverSidePluginKeysSet,
+      supportEmail: SUPPORT_EMAIL,
       ...(await serverSideTranslations(locale ?? 'en', [
         'common',
         'chat',
@@ -283,6 +287,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
         'markdown',
         'promptbar',
         'settings',
+        'error'
       ])),
       promptSharingEnabled: PROMPT_SHARING_ENABLED
     },
