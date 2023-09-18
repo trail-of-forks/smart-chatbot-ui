@@ -8,7 +8,7 @@ import Head from 'next/head';
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
 import { cleanConversationHistory } from '@/utils/app/clean';
-import { DEFAULT_SYSTEM_PROMPT, OPENAI_API_TYPE, PROMPT_SHARING_ENABLED } from '@/utils/app/const';
+import { DEFAULT_SYSTEM_PROMPT, OPENAI_API_TYPE, PROMPT_SHARING_ENABLED, SUPPORT_EMAIL } from '@/utils/app/const';
 import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
@@ -27,6 +27,7 @@ interface Props {
   defaultModelId: OpenAIModelID;
   isAzureOpenAI: boolean;
   promptSharingEnabled: boolean;
+  supportEmail: string;
 }
 
 const Home = ({
@@ -34,6 +35,7 @@ const Home = ({
   serverSidePluginKeysSet,
   defaultModelId,
   isAzureOpenAI,
+  supportEmail,
   promptSharingEnabled,
 }: Props) => {
   const { t } = useTranslation('chat');
@@ -52,6 +54,7 @@ const Home = ({
       ...initialState,
       stopConversationRef: stopConversationRef,
       isAzureOpenAI,
+      supportEmail,
       promptSharingEnabled: promptSharingEnabled,
     } as HomeInitialState,
   });
@@ -280,6 +283,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
       defaultModelId,
       isAzureOpenAI: OPENAI_API_TYPE === "azure",
       serverSidePluginKeysSet,
+      supportEmail: SUPPORT_EMAIL,
       ...(await serverSideTranslations(locale ?? 'en', [
         'common',
         'chat',
@@ -287,6 +291,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
         'markdown',
         'promptbar',
         'settings',
+        'error'
       ])),
       promptSharingEnabled: PROMPT_SHARING_ENABLED
     },

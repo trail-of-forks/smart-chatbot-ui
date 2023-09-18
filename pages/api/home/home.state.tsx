@@ -2,7 +2,6 @@ import { MutableRefObject } from 'react';
 
 import { Conversation, Message } from '@/types/chat';
 import { ChatModeKey } from '@/types/chatmode';
-import { ErrorMessage } from '@/types/error';
 import { FolderInterface } from '@/types/folder';
 import { OpenAIModel, OpenAIModelID } from '@/types/openai';
 import { Prompt } from '@/types/prompt';
@@ -33,6 +32,7 @@ export interface HomeInitialState {
   serverSidePluginKeysSet: boolean;
   stopConversationRef: MutableRefObject<boolean>;
   isAzureOpenAI: boolean;
+  supportEmail: string;
   promptSharingEnabled: boolean;
 }
 
@@ -64,5 +64,6 @@ export const initialState: Partial<HomeInitialState> = {
   serverSideApiKeyIsSet: false,
   serverSidePluginKeysSet: false,
   isAzureOpenAI: false,
+  supportEmail: '',
   promptSharingEnabled: false,
 };
