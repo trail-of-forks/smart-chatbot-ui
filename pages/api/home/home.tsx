@@ -8,7 +8,12 @@ import Head from 'next/head';
 import { useCreateReducer } from '@/hooks/useCreateReducer';
 
 import { cleanConversationHistory } from '@/utils/app/clean';
-import { DEFAULT_SYSTEM_PROMPT, SUPPORT_EMAIL, PROMPT_SHARING_ENABLED } from '@/utils/app/const';
+import {
+  DEFAULT_SYSTEM_PROMPT,
+  OPENAI_API_TYPE,
+  PROMPT_SHARING_ENABLED,
+  SUPPORT_EMAIL,
+} from '@/utils/app/const';
 import { trpc } from '@/utils/trpc';
 
 import { Conversation } from '@/types/chat';
@@ -25,14 +30,16 @@ interface Props {
   serverSideApiKeyIsSet: boolean;
   serverSidePluginKeysSet: boolean;
   defaultModelId: OpenAIModelID;
-  supportEmail: string,
-  promptSharingEnabled: boolean,
+  isAzureOpenAI: boolean;
+  promptSharingEnabled: boolean;
+  supportEmail: string;
 }
 
 const Home = ({
   serverSideApiKeyIsSet,
   serverSidePluginKeysSet,
   defaultModelId,
+  isAzureOpenAI,
   supportEmail,
   promptSharingEnabled,
 }: Props) => {
@@ -51,13 +58,21 @@ const Home = ({
     initialState: {
       ...initialState,
       stopConversationRef: stopConversationRef,
+      isAzureOpenAI,
       supportEmail,
       promptSharingEnabled: promptSharingEnabled,
     } as HomeInitialState,
   });
 
   const {
-    state: { apiKey, settings, conversations, selectedConversation, prompts, models },
+    state: {
+      apiKey,
+      settings,
+      conversations,
+      selectedConversation,
+      prompts,
+      models,
+    },
     dispatch,
   } = contextValue;
 
@@ -115,7 +130,7 @@ const Home = ({
 
   useEffect(() => {
     conversationsQuery.refetch();
-  }, [conversationsQuery]);
+  }, []);
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -175,7 +190,7 @@ const Home = ({
             id: uuidv4(),
             name: t('New Conversation'),
             messages: [],
-            model: models.find(m=>m.id == defaultModelId),
+            model: models.find((m) => m.id == defaultModelId),
             prompt: DEFAULT_SYSTEM_PROMPT,
             temperature: settings.defaultTemperature,
             folderId: null,
@@ -189,7 +204,7 @@ const Home = ({
     settings.defaultTemperature,
     t,
     defaultModelId,
-    models
+    models,
   ]);
 
   useEffect(() => {
@@ -278,6 +293,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
     props: {
       serverSideApiKeyIsSet: !!process.env.OPENAI_API_KEY,
       defaultModelId,
+      isAzureOpenAI: OPENAI_API_TYPE === 'azure',
       serverSidePluginKeysSet,
       supportEmail: SUPPORT_EMAIL,
       ...(await serverSideTranslations(locale ?? 'en', [
@@ -287,9 +303,9 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
         'markdown',
         'promptbar',
         'settings',
-        'error'
+        'error',
       ])),
-      promptSharingEnabled: PROMPT_SHARING_ENABLED
+      promptSharingEnabled: PROMPT_SHARING_ENABLED,
     },
   };
 };

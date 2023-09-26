@@ -9,3 +9,12 @@ export default trpcNext.createNextApiHandler({
   router: appRouter,
   createContext,
 });
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '5mb',
+    },
+    responseLimit: '5mb',
+  },
+};
